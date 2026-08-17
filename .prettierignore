@@ -1,0 +1,10 @@
+# Verbatim, authoritative SQL — must never be reformatted
+supabase/
+
+# Generated — regenerate with `npm run gen:types`, never hand-edit
+src/types/database.types.ts
+
+node_modules
+dist
+coverage
+package-lock.json

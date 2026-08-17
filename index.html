@@ -1,13 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>sonol</title>
+    <meta name="theme-color" content="#1E3A8A" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="ניהול סבבי הפצה לתחנות דלק" />
+    <title>סונול</title>
+    <script>
+      // Applies the stored theme before first paint so a dark-mode user never
+      // sees a white flash on reload. Kept inline and tiny on purpose.
+      (function () {
+        try {
+          var stored = localStorage.getItem('sonol-theme');
+          var dark =
+            stored === 'dark' ||
+            (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+        } catch (e) {
+          /* private mode — fall back to the light default */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
