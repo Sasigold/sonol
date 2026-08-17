@@ -27,16 +27,30 @@ import {
 import { StatTile } from '@/components/dashboard/StatTile';
 import { AreaTable } from '@/components/dashboard/AreaTable';
 import { WorkerChart } from '@/components/dashboard/WorkerChart';
-import { useAreaStats, useGlobalStats, useResetRound, useUserStats } from '@/hooks/useDashboard';
+import { DailyChart } from '@/components/dashboard/DailyChart';
+import { PaceSection } from '@/components/dashboard/PaceSection';
+import {
+  useAreaStats,
+  useCurrentRound,
+  useGlobalStats,
+  useResetRound,
+  useRoundDailyStats,
+  useUserStats,
+} from '@/hooks/useDashboard';
 import { downloadCsv, toCsv } from '@/lib/csv';
 import { toHebrewError } from '@/lib/errors';
-import { actions, dialogs, fields, labels, nav, states, toasts } from '@/lib/copy';
+import { actions, daily, dialogs, fields, labels, nav, states, toasts } from '@/lib/copy';
 
 export function DashboardPage() {
   const global = useGlobalStats();
   const areas = useAreaStats();
   const users = useUserStats();
   const reset = useResetRound();
+  // The pace and daily sections key on the open round. This query is cheap and
+  // sits OUTSIDE the shared pending/error gate below — those sections own their
+  // own states, so a hiccup here never blanks the counters and area table.
+  const round = useCurrentRound();
+  const dailyStats = useRoundDailyStats(round.data ?? null);
 
   const [resetOpen, setResetOpen] = useState(false);
   const [typed, setTyped] = useState('');
@@ -161,6 +175,26 @@ export function DashboardPage() {
             <h2 className="text-h2 text-text">{fields.worker}</h2>
             <WorkerChart stats={users.data} />
           </section>
+
+          <section className="flex flex-col gap-3">
+            <h2 className="text-h2 text-text">{daily.title}</h2>
+            {dailyStats.isPending ? (
+              <div aria-busy="true">
+                <span className="sr-only">{states.loading}</span>
+                <Skeleton className="h-12 w-full rounded-lg" />
+              </div>
+            ) : dailyStats.isError ? (
+              <ErrorState
+                onRetry={() => {
+                  void dailyStats.refetch();
+                }}
+              />
+            ) : (
+              <DailyChart stats={dailyStats.data} />
+            )}
+          </section>
+
+          <PaceSection roundId={round.data ?? null} />
 
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">

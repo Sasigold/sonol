@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { greeting, jerusalemHour } from './format';
+import { formatDuration, greeting, jerusalemHour, minutesSince } from './format';
 import { labels } from './copy';
 
 /**
@@ -35,5 +35,34 @@ describe('greeting', () => {
     const winter = new Date(Date.UTC(2026, 0, 15, 10, 30));
     expect(jerusalemHour(winter)).toBe(12);
     expect(greeting(winter)).toBe(labels.greetingNoon);
+  });
+});
+
+describe('formatDuration', () => {
+  it('rounds to whole minutes with a one-minute floor', () => {
+    // A real travel leg is never shorter than the 60s the view already filters,
+    // but the floor guards against a "0 דק׳" ever rendering.
+    expect(formatDuration(59)).toBe('1 דק׳');
+    expect(formatDuration(23 * 60)).toBe('23 דק׳');
+  });
+
+  it('rolls into an hours:minutes form at sixty minutes', () => {
+    // 3599s rounds to 60 minutes, which is exactly the hour form, not "60 דק׳".
+    expect(formatDuration(3599)).toBe('1:00 שע׳');
+    expect(formatDuration(3600)).toBe('1:00 שע׳');
+    expect(formatDuration(6420)).toBe('1:47 שע׳');
+  });
+
+  it('zero-pads the minutes past the hour', () => {
+    expect(formatDuration(3660)).toBe('1:01 שע׳');
+  });
+});
+
+describe('minutesSince', () => {
+  it('floors the elapsed whole minutes', () => {
+    const base = Date.UTC(2026, 0, 1, 12, 0, 0);
+    expect(minutesSince(base, base + 30_000)).toBe(0);
+    expect(minutesSince(base, base + 60_000)).toBe(1);
+    expect(minutesSince(base, base + 119_000)).toBe(1);
   });
 });

@@ -18,6 +18,18 @@ describe('copy', () => {
     expect(copy.labels.stationsInArea(18)).toBe('18 תחנות');
     expect(copy.labels.roundCompletions(120)).toBe('120 ביצועים');
     expect(copy.labels.searchResults(0)).toBe('0 תוצאות');
+    expect(copy.labels.durationMinutes(23)).toBe('23 דק׳');
+    expect(copy.labels.durationHours('1:47')).toBe('1:47 שע׳');
+    expect(copy.pace.anomalyLeg('תחנת רמלה', 'תחנת לוד')).toBe('תחנת רמלה ← תחנת לוד');
+  });
+
+  it('phrases the rapid-completion warning for both time framings', () => {
+    expect(copy.dialogs.rapidComplete.body(0, 'תחנת רמלה', 'תחנת לוד')).toBe(
+      'לפני פחות מדקה סימנת את תחנת רמלה. בטוח שביצעת גם את תחנת לוד?',
+    );
+    expect(copy.dialogs.rapidComplete.body(1, 'תחנת רמלה', 'תחנת לוד')).toBe(
+      'לפני דקה סימנת את תחנת רמלה. בטוח שביצעת גם את תחנת לוד?',
+    );
   });
 
   it('names the affected entity in every destructive dialog', () => {

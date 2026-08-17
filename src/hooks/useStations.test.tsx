@@ -65,12 +65,15 @@ describe('useToggleStation', () => {
     await offlineQueue.clear();
   });
 
-  it('marks the station through the RPC', async () => {
+  it('marks the station through the RPC without the queued flag', async () => {
     rpc.mockResolvedValue(undefined);
     const { result } = setup();
 
     result.current.mutate({ station: station(), done: true });
 
+    // Exact-arity assertion: the online path sends no `queued` argument, so it
+    // defaults to false. If a third `true` ever appears here, a live tap would
+    // be miscounted as an offline replay and dropped from the pace stats.
     await waitFor(() => {
       expect(rpc).toHaveBeenCalledWith('station-1', true);
     });
@@ -145,6 +148,26 @@ describe('useToggleStation', () => {
     // Invalidating here would replace the optimistic row with the server's
     // stale answer and un-mark the station in front of the worker.
     expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it('replays a queued tap with the queued flag set', async () => {
+    // The offline queue drains through the same RPC wrapper, but with
+    // `queued = true` so the burst of replayed completions on reconnect is
+    // excluded from the pace stats rather than read as travel time.
+    rpc.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = setup();
+
+    result.current.mutate({ station: station(), done: true });
+    await waitFor(() => {
+      expect(offlineQueue.count()).toBe(1);
+    });
+
+    rpc.mockReset();
+    rpc.mockResolvedValue(undefined);
+    await offlineQueue.drain();
+
+    expect(rpc).toHaveBeenCalledWith('station-1', true, true);
+    expect(offlineQueue.count()).toBe(0);
   });
 });
 

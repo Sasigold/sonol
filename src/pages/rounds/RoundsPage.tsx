@@ -34,11 +34,21 @@ export function RoundsPage() {
   function exportCsv() {
     if (!rounds.data) return;
     const csv = toCsv(
-      [fields.round, fields.startedAt, fields.endedAt, labels.done, fields.worker],
+      [
+        fields.round,
+        fields.startedAt,
+        fields.endedAt,
+        copy.firstCompletion,
+        copy.lastCompletion,
+        labels.done,
+        fields.worker,
+      ],
       rounds.data.map((round) => [
         round.label,
         formatDate(round.started_at),
         round.ended_at ? formatDate(round.ended_at) : labels.stillOpen,
+        formatDate(round.first_completed_at),
+        formatDate(round.last_completed_at),
         round.completed_count,
         round.worker_count,
       ]),
@@ -172,6 +182,18 @@ function RoundCard({
 
       {open ? (
         <div className="border-border flex flex-col gap-2 border-t pt-3">
+          {/* The real work span — first completion to last — not the round's
+              administrative start/end, which can be a month apart. The Hebrew
+              prefix stays RTL; only the date range is isolated. */}
+          {round.first_completed_at && round.last_completed_at ? (
+            <p className="text-caption text-text-muted">
+              {labels.workSpan}{' '}
+              <span className="ltr-isolate">
+                {formatDate(round.first_completed_at)} – {formatDate(round.last_completed_at)}
+              </span>
+            </p>
+          ) : null}
+
           <h2 className="text-caption text-text-muted">{copy.perWorker}</h2>
 
           {users.isPending ? (

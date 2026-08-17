@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowRight, ArrowUpDown, PackageCheck, Search, SearchX, X } from 'lucide-react';
@@ -24,14 +24,23 @@ import {
 import { useRealtimeStations } from '@/hooks/useRealtimeStations';
 import { useSortDirection } from '@/hooks/useSortDirection';
 import { navigateToStation } from '@/lib/waze';
+import { minutesSince } from '@/lib/format';
 import { toHebrewError } from '@/lib/errors';
 import { actions, dialogs, labels, nav, states, toasts } from '@/lib/copy';
 
 type PendingDialog =
   | { kind: 'complete'; station: Station }
+  | { kind: 'rapidComplete'; station: Station; prevName: string; minutesAgo: number }
   | { kind: 'uncomplete'; station: Station }
   | { kind: 'navigate'; station: Station }
   | null;
+
+/**
+ * How recent a previous completion must be for the next one to prompt a "did
+ * you mean to?" warning. A fat-finger double-tap happens in seconds; a genuine
+ * back-to-back pair at two adjacent pumps is still well under this.
+ */
+const RAPID_WINDOW_MS = 2 * 60_000;
 
 export function AreaPage() {
   const { areaId } = useParams<{ areaId: string }>();
@@ -49,6 +58,19 @@ export function AreaPage() {
   useRealtimeStations(areaId);
 
   const [dialog, setDialog] = useState<PendingDialog>(null);
+
+  // The last completion the worker CONFIRMED on this screen — timestamp and
+  // station name — for the rapid-double-completion warning. Client-only and
+  // deliberately not derived from any row's `completed_at`: an optimistic row
+  // carries the client clock and a refetched one the server's, and a queued tap
+  // never gets a server time at all. This ref measures the worker's own taps.
+  const lastCompleted = useRef<{ at: number; name: string } | null>(null);
+  // The route is param-only (`/areas/:areaId`), so React Router keeps this
+  // component mounted when the worker switches areas — the ref must be cleared
+  // by hand, or a tap in the new area would compare against the old one.
+  useEffect(() => {
+    lastCompleted.current = null;
+  }, [areaId]);
 
   const [search, setSearch] = useState('');
 
@@ -89,7 +111,15 @@ export function AreaPage() {
       return;
     }
 
-    const done = dialog.kind === 'complete';
+    const done = dialog.kind === 'complete' || dialog.kind === 'rapidComplete';
+
+    if (done) {
+      // Recorded at confirm time, not in onSuccess: a tap made offline resolves
+      // through onError, and the warning is about what the worker intended to
+      // mark, not about what the server acknowledged.
+      lastCompleted.current = { at: Date.now(), name: dialog.station.name };
+    }
+
     toggleStation.mutate(
       { station: dialog.station, done },
       {
@@ -106,6 +136,16 @@ export function AreaPage() {
 
   const cardHandlers = (station: Station) => ({
     onComplete: () => {
+      const previous = lastCompleted.current;
+      if (previous !== null && Date.now() - previous.at < RAPID_WINDOW_MS) {
+        setDialog({
+          kind: 'rapidComplete',
+          station,
+          prevName: previous.name,
+          minutesAgo: minutesSince(previous.at, Date.now()),
+        });
+        return;
+      }
       setDialog({ kind: 'complete', station });
     },
     onUncomplete: () => {
@@ -322,16 +362,24 @@ export function AreaPage() {
             ? dialogs.navigateWarning.title
             : dialog?.kind === 'uncomplete'
               ? dialogs.confirmUncomplete.title
-              : dialogs.confirmComplete.title
+              : dialog?.kind === 'rapidComplete'
+                ? dialogs.rapidComplete.title
+                : dialogs.confirmComplete.title
         }
         description={
           dialog?.kind === 'navigate'
             ? dialogs.navigateWarning.body
             : dialog?.kind === 'uncomplete'
               ? dialogs.confirmUncomplete.body(dialog.station.name)
-              : dialog
-                ? dialogs.confirmComplete.body(dialog.station.name)
-                : ''
+              : dialog?.kind === 'rapidComplete'
+                ? dialogs.rapidComplete.body(
+                    dialog.minutesAgo,
+                    dialog.prevName,
+                    dialog.station.name,
+                  )
+                : dialog
+                  ? dialogs.confirmComplete.body(dialog.station.name)
+                  : ''
         }
         confirmLabel={dialog?.kind === 'navigate' ? actions.navigateAnyway : actions.confirm}
         destructive={dialog?.kind === 'uncomplete'}

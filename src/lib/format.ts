@@ -26,3 +26,32 @@ export function jerusalemHour(date: Date): number {
   // Intl renders midnight as "24" in some ICU versions.
   return Number.isNaN(hour) ? 0 : hour % 24;
 }
+
+/**
+ * A duration of `seconds` in Hebrew, for the pace stats (§ pace).
+ *
+ * Rounds to the nearest whole minute — sub-minute precision is noise for a
+ * travel leg — with a floor of one minute so a real leg never reads "0 דק׳".
+ * Under an hour: "23 דק׳". An hour or more: "1:47 שע׳" with zero-padded
+ * minutes. The `h:mm` run is built here, not in copy.ts, so copy stays a
+ * declarative table; its digits are a Latin run, so callers mixing it into a
+ * Hebrew sentence wrap it in `.ltr-isolate` / `<bdi>`.
+ */
+export function formatDuration(seconds: number): string {
+  const totalMinutes = Math.max(1, Math.round(seconds / 60));
+  if (totalMinutes < 60) return labels.durationMinutes(totalMinutes);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return labels.durationHours(`${hours}:${String(minutes).padStart(2, '0')}`);
+}
+
+/**
+ * Whole minutes elapsed between two epoch-millisecond instants, floored.
+ *
+ * Trivial arithmetic, extracted so the rapid-completion warning's threshold
+ * (§ dialogs.rapidComplete) is exercised by a unit test rather than only by a
+ * component test.
+ */
+export function minutesSince(thenMs: number, nowMs: number): number {
+  return Math.floor((nowMs - thenMs) / 60_000);
+}

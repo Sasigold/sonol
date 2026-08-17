@@ -124,6 +124,7 @@ export type Database = {
           action: Database["public"]["Enums"]["completion_action"]
           created_at: string
           id: string
+          queued: boolean
           round_id: string | null
           station_id: string
           user_id: string | null
@@ -133,6 +134,7 @@ export type Database = {
           action: Database["public"]["Enums"]["completion_action"]
           created_at?: string
           id?: string
+          queued?: boolean
           round_id?: string | null
           station_id: string
           user_id?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           action?: Database["public"]["Enums"]["completion_action"]
           created_at?: string
           id?: string
+          queued?: boolean
           round_id?: string | null
           station_id?: string
           user_id?: string | null
@@ -354,6 +357,58 @@ export type Database = {
         }
         Relationships: []
       }
+      completion_gaps: {
+        Row: {
+          completed_at: string | null
+          from_station_id: string | null
+          from_station_name: string | null
+          gap_seconds: number | null
+          is_anomaly: boolean | null
+          median_gap_seconds: number | null
+          round_id: string | null
+          to_station_id: string | null
+          to_station_name: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "round_stats"
+            referencedColumns: ["round_id"]
+          },
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_station_id_fkey"
+            columns: ["to_station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_stats"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       global_stats: {
         Row: {
           done_count: number | null
@@ -376,11 +431,36 @@ export type Database = {
         }
         Relationships: []
       }
+      round_daily_stats: {
+        Row: {
+          completed_count: number | null
+          day: string | null
+          round_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "round_stats"
+            referencedColumns: ["round_id"]
+          },
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_stats: {
         Row: {
           completed_count: number | null
           ended_at: string | null
+          first_completed_at: string | null
           label: string | null
+          last_completed_at: string | null
           round_id: string | null
           started_at: string | null
           uncompleted_count: number | null
@@ -438,6 +518,47 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_pace_stats: {
+        Row: {
+          anomaly_count: number | null
+          leg_count: number | null
+          max_gap_seconds: number | null
+          median_gap_seconds: number | null
+          round_id: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "round_stats"
+            referencedColumns: ["round_id"]
+          },
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_stats"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_set_user_areas: {
@@ -481,7 +602,7 @@ export type Database = {
       }
       can_access_area: { Args: { p_area_id: string }; Returns: boolean }
       complete_station: {
-        Args: { p_station_id: string }
+        Args: { p_queued?: boolean; p_station_id: string }
         Returns: {
           area_id: string
           completed_at: string | null
@@ -547,7 +668,7 @@ export type Database = {
         }
       }
       uncomplete_station: {
-        Args: { p_station_id: string }
+        Args: { p_queued?: boolean; p_station_id: string }
         Returns: {
           area_id: string
           completed_at: string | null

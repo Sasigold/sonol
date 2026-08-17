@@ -265,8 +265,9 @@ export function createOfflineQueue({
 /**
  * The instance the app uses. Replays through the same RPC wrapper the online
  * path calls, so there is exactly one definition of what "mark this station"
- * means.
+ * means. It replays with `queued = true`: these rows arrive in a burst on
+ * reconnect, and the pace stats must not read that burst as travel time.
  */
 export const offlineQueue = createOfflineQueue({
-  execute: (record) => toggleStationRpc(record.stationId, record.done),
+  execute: (record) => toggleStationRpc(record.stationId, record.done, true),
 });

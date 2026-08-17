@@ -159,6 +159,21 @@ export const labels = {
   /* The position helper on the station form. */
   positionFirst: 'ראשונה באזור',
   positionAfter: (name: string) => `אחרי ${name}`,
+  /**
+   * Durations for the pace stats (§ pace). Built by `formatDuration` in
+   * `format.ts`; the `h:mm` run and the minute count are Latin digit runs, so a
+   * caller mixing them into a Hebrew sentence wraps them in `.ltr-isolate`. The
+   * suffixes use the geresh (׳), not an apostrophe.
+   */
+  durationMinutes: (n: number) => `${n} דק׳`,
+  durationHours: (hoursMinutes: string) => `${hoursMinutes} שע׳`,
+  /**
+   * Real work span of a round: first completion to last (§ F3, RoundsPage). A
+   * static prefix, not an interpolation — the date RANGE that follows must live
+   * in its own `.ltr-isolate` span (two dates around an en-dash reorder under
+   * the bidi algorithm), while this Hebrew prefix stays in the RTL flow.
+   */
+  workSpan: 'עבודה בפועל:',
 } as const;
 
 /* 9.5 Dialogs ---------------------------------------------------------------- */
@@ -174,6 +189,27 @@ export const dialogs = {
   navigateWarning: {
     title: 'שים לב',
     body: 'נראה שאתה מנווט לתחנה שאינה הבאה ברשימה',
+  },
+  /**
+   * Authored, not in §9. Guards a fat-finger double completion: when a worker
+   * confirms a second station within two minutes of the previous one, the
+   * confirm body names the previous station and how long ago it was, so an
+   * accidental double-tap is caught while a genuine quick pair still goes
+   * through. A warning, never a block. The window is under two minutes, so
+   * `minutesAgo` is only ever 0 or 1 in practice; the plural branch is a
+   * belt-and-braces.
+   */
+  rapidComplete: {
+    title: 'שים לב',
+    body: (minutesAgo: number, prevName: string, name: string) => {
+      const ago =
+        minutesAgo <= 0
+          ? 'לפני פחות מדקה'
+          : minutesAgo === 1
+            ? 'לפני דקה'
+            : `לפני ${minutesAgo} דקות`;
+      return `${ago} סימנת את ${prevName}. בטוח שביצעת גם את ${name}?`;
+    },
   },
   deleteStation: {
     title: 'מחיקת תחנה',
@@ -387,6 +423,14 @@ export const stations = {
 export const history = {
   intro: 'כל איפוס סוגר סבב ופותח חדש. הנתונים של הסבבים הקודמים נשמרים.',
   perWorker: 'פירוט לפי עובד',
+  /**
+   * Authored, for the real work span (§ F3). A round's `started_at`/`ended_at`
+   * are administrative — a round can sit open for a month — so the honest span
+   * is the first completion to the last. CSV column headers, and the accordion
+   * builds a sentence from these via `labels.workSpan`.
+   */
+  firstCompletion: 'ביצוע ראשון',
+  lastCompletion: 'ביצוע אחרון',
 } as const;
 
 /* Blocked screen (§8.3) ------------------------------------------------------ */
@@ -413,6 +457,46 @@ export const app = {
   passwordStrength: 'חוזק הסיסמה',
 } as const;
 
+/* Pace between stations (§ F1, admin dashboard) -------------------------------
+   Authored — §9 predates this screen. The manager wanted to see how long a
+   worker takes between stations and be told about abnormally long legs. A leg
+   is anomalous when its gap exceeds three times that worker's own median gap in
+   the round, so a dense city area and a spread-out rural one each judge against
+   their own normal, with no per-area threshold to maintain. */
+export const pace = {
+  title: 'קצב בין תחנות',
+  intro: 'הזמן שעובר בין תחנות עוקבות שאותו עובד סימן, בסבב הנוכחי.',
+  colWorker: 'עובד',
+  colMedian: 'זמן חציוני',
+  colMax: 'פער מרבי',
+  colAnomalies: 'חריגות',
+  /** Disclosure that lazily loads the anomalous-legs list. */
+  showAnomalies: 'הצג פערים חריגים',
+  anomalyHint: 'פער הארוך מפי שלושה מהזמן החציוני של אותו עובד',
+  /** Shown instead of an anomaly count when a worker has too few legs to judge. */
+  fewLegs: 'מעט מדי נתונים',
+  /** A leg, as one label: the arrow points (in RTL) from the first station to the second. */
+  anomalyLeg: (from: string, to: string) => `${from} ← ${to}`,
+  empty: {
+    title: 'אין עדיין מספיק נתונים',
+    body: 'הקצב יופיע לאחר שעובדים יסמנו כמה תחנות ברצף בסבב הנוכחי',
+  },
+} as const;
+
+/* Daily progress (§ F3, admin dashboard) -------------------------------------
+   Authored — a day-by-day view of the current round's completions. Buckets come
+   from `round_daily_stats`, already in Asia/Jerusalem. */
+export const daily = {
+  title: 'התקדמות יומית',
+  /** Series name, shown in the chart tooltip and the table fallback. */
+  seriesLabel: 'ביצועים',
+  colDay: 'תאריך',
+  empty: {
+    title: 'אין עדיין ביצועים בסבב הנוכחי',
+    body: 'הגרף יתמלא ככל שתחנות יסומנו',
+  },
+} as const;
+
 export const copy = {
   nav,
   fields,
@@ -432,6 +516,8 @@ export const copy = {
   users,
   stations,
   history,
+  pace,
+  daily,
   blocked,
   app,
 } as const;
