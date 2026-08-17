@@ -7,6 +7,7 @@ export type UserStat = Views<'user_stats'>;
 export type WorkerPaceStat = Views<'worker_pace_stats'>;
 export type CompletionGap = Views<'completion_gaps'>;
 export type RoundDailyStat = Views<'round_daily_stats'>;
+export type CompletionLocation = Views<'completion_locations'>;
 
 /**
  * The dashboard is FOUR queries, one per view — not `1 + 3 x areas` realtime
@@ -137,6 +138,29 @@ export function useRoundDailyStats(roundId: string | null) {
         .select('*')
         .eq('round_id', roundId ?? '')
         .order('day', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/**
+ * Completions that stand more than 500m from their station, worst first, for the
+ * open round. `completion_locations` already did the distance and the threshold
+ * (allowing for GPS accuracy); this just filters to the flagged ones.
+ */
+export function useFarCompletions(roundId: string | null) {
+  return useQuery({
+    queryKey: ['dashboard', 'far', roundId ?? ''],
+    enabled: roundId !== null,
+    queryFn: async (): Promise<CompletionLocation[]> => {
+      const { data, error } = await supabase
+        .from('completion_locations')
+        .select('*')
+        .eq('round_id', roundId ?? '')
+        .eq('is_far', true)
+        .order('distance_m', { ascending: false })
+        .limit(50);
       if (error) throw error;
       return data;
     },

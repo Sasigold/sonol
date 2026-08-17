@@ -20,6 +20,8 @@ describe('copy', () => {
     expect(copy.labels.searchResults(0)).toBe('0 תוצאות');
     expect(copy.labels.durationMinutes(23)).toBe('23 דק׳');
     expect(copy.labels.durationHours('1:47')).toBe('1:47 שע׳');
+    expect(copy.labels.distanceMeters(320)).toBe('320 מ׳');
+    expect(copy.labels.distanceKm('1.2')).toBe('1.2 ק״מ');
     expect(copy.pace.anomalyLeg('תחנת רמלה', 'תחנת לוד')).toBe('תחנת רמלה ← תחנת לוד');
   });
 

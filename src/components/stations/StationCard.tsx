@@ -4,6 +4,7 @@ import {
   Check,
   Fuel,
   Mail,
+  MapPin,
   MoreVertical,
   Navigation,
   Newspaper,
@@ -22,9 +23,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { actions, fields, labels, states } from '@/lib/copy';
+import { actions, fields, labels, location, states } from '@/lib/copy';
 import { cn } from '@/lib/utils';
+import { distanceMeters } from '@/lib/geo';
+import { formatDistance } from '@/lib/format';
 import type { Station } from '@/hooks/useStations';
+
+/** Metres beyond which a completion is flagged as away from its station (§ location). */
+const FAR_THRESHOLD_M = 500;
 
 interface StationCardProps {
   station: Station;
@@ -51,6 +57,26 @@ export function StationCard({
 }: StationCardProps) {
   const hasLocation = station.latitude !== null && station.longitude !== null;
   const isSuper = station.fuel_type === 'super';
+
+  // Admin-only: how far the captured completion position is from the station's
+  // own coordinates. Needs both points; distance is computed locally (the row
+  // already carries both) rather than through completion_locations, which serves
+  // the dashboard aggregate. Narrowed to non-null coords so no `!` is needed.
+  const stationCoords =
+    station.latitude !== null && station.longitude !== null
+      ? { latitude: station.latitude, longitude: station.longitude }
+      : null;
+  const capturedCoords =
+    station.completed_latitude !== null && station.completed_longitude !== null
+      ? { latitude: station.completed_latitude, longitude: station.completed_longitude }
+      : null;
+  const completionDistance =
+    isAdmin && station.is_done && stationCoords !== null && capturedCoords !== null
+      ? distanceMeters(stationCoords, capturedCoords)
+      : null;
+  const isFar =
+    completionDistance !== null &&
+    completionDistance - (station.completed_accuracy ?? 0) > FAR_THRESHOLD_M;
 
   return (
     <article
@@ -116,6 +142,28 @@ export function StationCard({
                 format(new Date(station.completed_at), 'd/M HH:mm', { locale: he }),
                 station.completed_by_name ?? '—',
               )}
+            </p>
+          ) : null}
+
+          {/* Distance of the captured completion from the station (admin, §
+              location). Colour never carries it alone — a far one keeps the pin
+              icon and an explicit label. */}
+          {completionDistance !== null ? (
+            <p
+              className={cn(
+                'text-caption flex flex-wrap items-center gap-1',
+                isFar ? 'text-danger' : 'text-text-muted',
+              )}
+            >
+              <MapPin className="size-4 shrink-0" aria-hidden />
+              <span className="ltr-isolate">{formatDistance(completionDistance)}</span>
+              {location.fromStation}
+              {isFar ? (
+                <Badge variant="danger">
+                  <MapPin className="size-4" aria-hidden />
+                  {location.farBadge}
+                </Badge>
+              ) : null}
             </p>
           ) : null}
         </div>

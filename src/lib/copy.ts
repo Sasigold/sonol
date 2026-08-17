@@ -168,6 +168,13 @@ export const labels = {
   durationMinutes: (n: number) => `${n} דק׳`,
   durationHours: (hoursMinutes: string) => `${hoursMinutes} שע׳`,
   /**
+   * Distances for the location checks (§ location). Built by `formatDistance` in
+   * `format.ts`; the number is a Latin run, wrapped in `.ltr-isolate` by callers.
+   * Uses the geresh (׳) and gershayim (״), not ASCII quotes.
+   */
+  distanceMeters: (n: number) => `${n} מ׳`,
+  distanceKm: (km: string) => `${km} ק״מ`,
+  /**
    * Real work span of a round: first completion to last (§ F3, RoundsPage). A
    * static prefix, not an interpolation — the date RANGE that follows must live
    * in its own `.ltr-isolate` span (two dates around an en-dash reorder under
@@ -497,6 +504,31 @@ export const daily = {
   },
 } as const;
 
+/* Location verification (§ F4, admin dashboard + station card) ----------------
+   Authored — §9 predates GPS capture. The worker's position at completion is
+   compared to the station's own coordinates; a completion more than 500m away
+   (after allowing for the fix's accuracy) is flagged so the manager can check
+   it. Only completions with a captured position and a station that has
+   coordinates can be judged; the rest simply do not appear. */
+export const location = {
+  title: 'ביצועים רחוק מהתחנה',
+  intro: 'ביצועים שנרשמו יותר מ-500 מטר ממיקום התחנה, בסבב הנוכחי.',
+  colWorker: 'עובד',
+  colStation: 'תחנה',
+  colDistance: 'מרחק',
+  /**
+   * Suffix on the admin station card: the distance renders before it in its own
+   * `.ltr-isolate` span, this Hebrew word stays in the RTL flow → "320 מ׳ מהתחנה".
+   */
+  fromStation: 'מהתחנה',
+  /** Marks a card/row whose completion is beyond the threshold. */
+  farBadge: 'רחוק מהתחנה',
+  empty: {
+    title: 'אין ביצועים חריגים במיקום',
+    body: 'כל הביצועים עם מיקום נרשמו סמוך לתחנה',
+  },
+} as const;
+
 export const copy = {
   nav,
   fields,
@@ -518,6 +550,7 @@ export const copy = {
   history,
   pace,
   daily,
+  location,
   blocked,
   app,
 } as const;

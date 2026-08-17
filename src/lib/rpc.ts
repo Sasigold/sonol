@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { CapturedPosition } from '@/hooks/useGeolocationCapture';
 
 /**
  * The station toggle, as one call.
@@ -13,14 +14,33 @@ import { supabase } from './supabase';
  * not real travel; the flag lets `completion_gaps` drop those legs. The online
  * path leaves it false. Its default is false so a still-precached PWA calling
  * the RPC without the argument keeps working.
+ *
+ * `coords` is the worker's captured position at tap time (verification, §
+ * location). Only the complete path carries it; an undo has no location. Every
+ * argument is defaulted so a precached PWA calling the RPC without them still
+ * resolves the single overload.
  */
 export async function toggleStationRpc(
   stationId: string,
   done: boolean,
   queued = false,
+  coords: CapturedPosition | null = null,
 ): Promise<void> {
   const { error } = done
-    ? await supabase.rpc('complete_station', { p_station_id: stationId, p_queued: queued })
+    ? await supabase.rpc('complete_station', {
+        p_station_id: stationId,
+        p_queued: queued,
+        // Spread the coords keys only when present — under
+        // exactOptionalPropertyTypes an explicit `undefined` is not a valid
+        // value for the RPC's optional params.
+        ...(coords
+          ? {
+              p_latitude: coords.latitude,
+              p_longitude: coords.longitude,
+              p_accuracy: coords.accuracy,
+            }
+          : {}),
+      })
     : await supabase.rpc('uncomplete_station', { p_station_id: stationId, p_queued: queued });
   if (error) throw error;
 }

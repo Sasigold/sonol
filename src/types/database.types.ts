@@ -121,9 +121,12 @@ export type Database = {
       }
       station_completions: {
         Row: {
+          accuracy: number | null
           action: Database["public"]["Enums"]["completion_action"]
           created_at: string
           id: string
+          latitude: number | null
+          longitude: number | null
           queued: boolean
           round_id: string | null
           station_id: string
@@ -131,9 +134,12 @@ export type Database = {
           user_name: string | null
         }
         Insert: {
+          accuracy?: number | null
           action: Database["public"]["Enums"]["completion_action"]
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           queued?: boolean
           round_id?: string | null
           station_id: string
@@ -141,9 +147,12 @@ export type Database = {
           user_name?: string | null
         }
         Update: {
+          accuracy?: number | null
           action?: Database["public"]["Enums"]["completion_action"]
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           queued?: boolean
           round_id?: string | null
           station_id?: string
@@ -191,9 +200,12 @@ export type Database = {
       stations: {
         Row: {
           area_id: string
+          completed_accuracy: number | null
           completed_at: string | null
           completed_by: string | null
           completed_by_name: string | null
+          completed_latitude: number | null
+          completed_longitude: number | null
           created_at: string
           flyers: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]
@@ -211,9 +223,12 @@ export type Database = {
         }
         Insert: {
           area_id: string
+          completed_accuracy?: number | null
           completed_at?: string | null
           completed_by?: string | null
           completed_by_name?: string | null
+          completed_latitude?: number | null
+          completed_longitude?: number | null
           created_at?: string
           flyers?: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]
@@ -231,9 +246,12 @@ export type Database = {
         }
         Update: {
           area_id?: string
+          completed_accuracy?: number | null
           completed_at?: string | null
           completed_by?: string | null
           completed_by_name?: string | null
+          completed_latitude?: number | null
+          completed_longitude?: number | null
           created_at?: string
           flyers?: number
           fuel_type?: Database["public"]["Enums"]["fuel_type"]
@@ -406,6 +424,78 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_stats"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      completion_locations: {
+        Row: {
+          accuracy: number | null
+          area_id: string | null
+          completed_at: string | null
+          distance_m: number | null
+          is_far: boolean | null
+          round_id: string | null
+          station_id: string | null
+          station_name: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "round_stats"
+            referencedColumns: ["round_id"]
+          },
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "stations_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "area_stats"
+            referencedColumns: ["area_id"]
+          },
+          {
+            foreignKeyName: "stations_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stations_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "my_areas"
+            referencedColumns: ["area_id"]
           },
         ]
       }
@@ -602,12 +692,21 @@ export type Database = {
       }
       can_access_area: { Args: { p_area_id: string }; Returns: boolean }
       complete_station: {
-        Args: { p_queued?: boolean; p_station_id: string }
+        Args: {
+          p_accuracy?: number
+          p_latitude?: number
+          p_longitude?: number
+          p_queued?: boolean
+          p_station_id: string
+        }
         Returns: {
           area_id: string
+          completed_accuracy: number | null
           completed_at: string | null
           completed_by: string | null
           completed_by_name: string | null
+          completed_latitude: number | null
+          completed_longitude: number | null
           created_at: string
           flyers: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]
@@ -642,9 +741,12 @@ export type Database = {
         }
         Returns: {
           area_id: string
+          completed_accuracy: number | null
           completed_at: string | null
           completed_by: string | null
           completed_by_name: string | null
+          completed_latitude: number | null
+          completed_longitude: number | null
           created_at: string
           flyers: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]
@@ -671,9 +773,12 @@ export type Database = {
         Args: { p_queued?: boolean; p_station_id: string }
         Returns: {
           area_id: string
+          completed_accuracy: number | null
           completed_at: string | null
           completed_by: string | null
           completed_by_name: string | null
+          completed_latitude: number | null
+          completed_longitude: number | null
           created_at: string
           flyers: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, greeting, jerusalemHour, minutesSince } from './format';
+import { formatDistance, formatDuration, greeting, jerusalemHour, minutesSince } from './format';
 import { labels } from './copy';
 
 /**
@@ -64,5 +64,20 @@ describe('minutesSince', () => {
     expect(minutesSince(base, base + 30_000)).toBe(0);
     expect(minutesSince(base, base + 60_000)).toBe(1);
     expect(minutesSince(base, base + 119_000)).toBe(1);
+  });
+});
+
+describe('formatDistance', () => {
+  it('shows whole metres under a kilometre', () => {
+    expect(formatDistance(0)).toBe('0 מ׳');
+    expect(formatDistance(320)).toBe('320 מ׳');
+    expect(formatDistance(320.6)).toBe('321 מ׳');
+    expect(formatDistance(999)).toBe('999 מ׳');
+  });
+
+  it('rolls into one-decimal kilometres at a kilometre', () => {
+    expect(formatDistance(1000)).toBe('1.0 ק״מ');
+    expect(formatDistance(1200)).toBe('1.2 ק״מ');
+    expect(formatDistance(15400)).toBe('15.4 ק״מ');
   });
 });

@@ -29,6 +29,7 @@ import { AreaTable } from '@/components/dashboard/AreaTable';
 import { WorkerChart } from '@/components/dashboard/WorkerChart';
 import { DailyChart } from '@/components/dashboard/DailyChart';
 import { PaceSection } from '@/components/dashboard/PaceSection';
+import { LocationSection } from '@/components/dashboard/LocationSection';
 import {
   useAreaStats,
   useCurrentRound,
@@ -195,6 +196,8 @@ export function DashboardPage() {
           </section>
 
           <PaceSection roundId={round.data ?? null} />
+
+          <LocationSection roundId={round.data ?? null} />
 
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">

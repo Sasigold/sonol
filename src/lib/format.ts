@@ -46,6 +46,19 @@ export function formatDuration(seconds: number): string {
 }
 
 /**
+ * A distance of `meters` in Hebrew, for the location checks (§ location).
+ *
+ * Under a kilometre: whole metres, "320 מ׳". A kilometre or more: one decimal
+ * kilometre, "1.2 ק״מ". The number is a Latin run, so callers mixing it into a
+ * Hebrew sentence wrap it in `.ltr-isolate`. Uses the geresh (׳) and gershayim
+ * (״), not ASCII quotes.
+ */
+export function formatDistance(meters: number): string {
+  if (meters < 1000) return labels.distanceMeters(Math.round(meters));
+  return labels.distanceKm((meters / 1000).toFixed(1));
+}
+
+/**
  * Whole minutes elapsed between two epoch-millisecond instants, floored.
  *
  * Trivial arithmetic, extracted so the rapid-completion warning's threshold

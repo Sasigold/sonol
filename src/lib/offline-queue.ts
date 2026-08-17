@@ -1,6 +1,7 @@
 import { createStore, del, get, set } from 'idb-keyval';
 import { classifyMutationError } from './errors';
 import { toggleStationRpc } from './rpc';
+import type { CapturedPosition } from '@/hooks/useGeolocationCapture';
 
 /**
  * The offline mutation queue.
@@ -30,6 +31,13 @@ export interface QueuedToggle {
   areaId: string;
   done: boolean;
   baseline: boolean;
+  /**
+   * The worker's position when they tapped, replayed as-is. Captured here, not
+   * at replay time, because replay happens later somewhere else — a reconnect-
+   * time fix would place the completion at the wrong station. Absent when
+   * `done` is false (undo has no location) or no fresh fix was available.
+   */
+  coords?: CapturedPosition;
   queuedAt: number;
   attempts: number;
 }
@@ -170,10 +178,19 @@ export function createOfflineQueue({
       records = records.filter((record) => record !== existing);
     } else {
       // A fresh instruction for the same station: keep its place in the queue
-      // and its original timestamp, reset the retry count.
+      // and its original timestamp, reset the retry count. Take the LATEST
+      // tap's coordinates — that is where the worker most recently stood.
       records = records.map((record) =>
         record === existing
-          ? { ...record, done: input.done, areaId: input.areaId, attempts: 0 }
+          ? {
+              ...record,
+              done: input.done,
+              areaId: input.areaId,
+              // Only set coords when the new tap has them; an explicit undefined
+              // is invalid under exactOptionalPropertyTypes.
+              ...(input.coords ? { coords: input.coords } : {}),
+              attempts: 0,
+            }
           : record,
       );
     }
@@ -269,5 +286,5 @@ export function createOfflineQueue({
  * reconnect, and the pace stats must not read that burst as travel time.
  */
 export const offlineQueue = createOfflineQueue({
-  execute: (record) => toggleStationRpc(record.stationId, record.done, true),
+  execute: (record) => toggleStationRpc(record.stationId, record.done, true, record.coords ?? null),
 });

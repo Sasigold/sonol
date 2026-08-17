@@ -27,6 +27,9 @@ function station(overrides: Partial<Station> = {}): Station {
     completed_at: null,
     completed_by: null,
     completed_by_name: null,
+    completed_latitude: null,
+    completed_longitude: null,
+    completed_accuracy: null,
     latitude: null,
     longitude: null,
     waze_link: null,
@@ -65,19 +68,31 @@ describe('useToggleStation', () => {
     await offlineQueue.clear();
   });
 
-  it('marks the station through the RPC without the queued flag', async () => {
+  it('marks the station through the RPC, not queued, no position when there is no fix', async () => {
     rpc.mockResolvedValue(undefined);
     const { result } = setup();
 
     result.current.mutate({ station: station(), done: true });
 
-    // Exact-arity assertion: the online path sends no `queued` argument, so it
-    // defaults to false. If a third `true` ever appears here, a live tap would
-    // be miscounted as an offline replay and dropped from the pace stats.
+    // The online path sends queued=false. If it ever sends true, a live tap
+    // would be miscounted as an offline replay and dropped from the pace stats.
+    // coords null when the caller passes none.
     await waitFor(() => {
-      expect(rpc).toHaveBeenCalledWith('station-1', true);
+      expect(rpc).toHaveBeenCalledWith('station-1', true, false, null);
     });
     expect(offlineQueue.count()).toBe(0);
+  });
+
+  it('passes the captured position through on the online path', async () => {
+    rpc.mockResolvedValue(undefined);
+    const { result } = setup();
+    const coords = { latitude: 32.1, longitude: 34.8, accuracy: 9 };
+
+    result.current.mutate({ station: station(), done: true, coords });
+
+    await waitFor(() => {
+      expect(rpc).toHaveBeenCalledWith('station-1', true, false, coords);
+    });
   });
 
   it('rolls the list back when the server refuses', async () => {
@@ -166,7 +181,29 @@ describe('useToggleStation', () => {
     rpc.mockResolvedValue(undefined);
     await offlineQueue.drain();
 
-    expect(rpc).toHaveBeenCalledWith('station-1', true, true);
+    expect(rpc).toHaveBeenCalledWith('station-1', true, true, null);
+    expect(offlineQueue.count()).toBe(0);
+  });
+
+  it('replays a queued completion with the position captured at tap time', async () => {
+    // The whole point of capturing at tap time: the fix taken in the dead zone
+    // must ride the queue and be replayed, not a fix taken on reconnect
+    // somewhere else entirely.
+    rpc.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = setup();
+    const coords = { latitude: 32.5, longitude: 34.9, accuracy: 15 };
+
+    result.current.mutate({ station: station(), done: true, coords });
+    await waitFor(() => {
+      expect(offlineQueue.count()).toBe(1);
+    });
+    expect(offlineQueue.snapshot()[0]?.coords).toEqual(coords);
+
+    rpc.mockReset();
+    rpc.mockResolvedValue(undefined);
+    await offlineQueue.drain();
+
+    expect(rpc).toHaveBeenCalledWith('station-1', true, true, coords);
     expect(offlineQueue.count()).toBe(0);
   });
 });

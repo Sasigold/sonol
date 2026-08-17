@@ -3,6 +3,7 @@ import { supabase, type Tables } from '@/lib/supabase';
 import { toggleStationRpc } from '@/lib/rpc';
 import { offlineQueue } from '@/lib/offline-queue';
 import { classifyMutationError } from '@/lib/errors';
+import type { CapturedPosition } from '@/hooks/useGeolocationCapture';
 
 export type Station = Tables<'stations'>;
 
@@ -144,8 +145,16 @@ export function useToggleStation(areaId: string) {
      * the queue.
      */
     networkMode: 'always',
-    mutationFn: ({ station, done }: { station: Station; done: boolean }) =>
-      toggleStationRpc(station.id, done),
+    mutationFn: ({
+      station,
+      done,
+      coords,
+    }: {
+      station: Station;
+      done: boolean;
+      // The worker's position at tap time, for completions only (§ location).
+      coords?: CapturedPosition | null;
+    }) => toggleStationRpc(station.id, done, false, coords ?? null),
 
     onMutate: async ({ station, done }): Promise<CompletionContext> => {
       await queryClient.cancelQueries({ queryKey: stationKeys.byArea(areaId) });
@@ -168,18 +177,21 @@ export function useToggleStation(areaId: string) {
       return { previous, queued: false };
     },
 
-    onError: async (error, { station, done }, context) => {
+    onError: async (error, { station, done, coords }, context) => {
       if (classifyMutationError(error) === 'offline' && context) {
         // Keep the optimistic row and remember the tap. `baseline` is only
         // consulted for a station with nothing queued yet, and in that case the
         // cache still matches the server — a station already in the queue keeps
-        // the baseline recorded on its first tap.
+        // the baseline recorded on its first tap. The captured position rides
+        // the record so a dead-zone completion is replayed with where the
+        // worker actually stood, not where they reconnected.
         context.queued = true;
         await offlineQueue.enqueue({
           stationId: station.id,
           areaId,
           done,
           baseline: station.is_done,
+          ...(done && coords ? { coords } : {}),
         });
         return;
       }

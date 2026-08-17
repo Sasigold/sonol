@@ -23,6 +23,7 @@ import {
 } from '@/hooks/useStations';
 import { useRealtimeStations } from '@/hooks/useRealtimeStations';
 import { useSortDirection } from '@/hooks/useSortDirection';
+import { useGeolocationCapture } from '@/hooks/useGeolocationCapture';
 import { navigateToStation } from '@/lib/waze';
 import { minutesSince } from '@/lib/format';
 import { toHebrewError } from '@/lib/errors';
@@ -53,6 +54,9 @@ export function AreaPage() {
   const { descending, toggle } = useSortDirection(areaId);
   const toggleStation = useToggleStation(areaId ?? '');
   const setMarkers = useSetMarkers(areaId ?? '');
+  // Keeps a warm GPS fix while this screen is open; read synchronously at
+  // confirm time (§ location). Returns null when denied/unavailable/stale.
+  const { capture } = useGeolocationCapture();
 
   // One channel for this area — not one per tab (defect 21).
   useRealtimeStations(areaId);
@@ -113,6 +117,11 @@ export function AreaPage() {
 
     const done = dialog.kind === 'complete' || dialog.kind === 'rapidComplete';
 
+    // Capture the worker's position synchronously at confirm time (§ location).
+    // For completions only, and it survives the offline path — the queued record
+    // carries it to replay.
+    const coords = done ? capture() : null;
+
     if (done) {
       // Recorded at confirm time, not in onSuccess: a tap made offline resolves
       // through onError, and the warning is about what the worker intended to
@@ -121,7 +130,7 @@ export function AreaPage() {
     }
 
     toggleStation.mutate(
-      { station: dialog.station, done },
+      { station: dialog.station, done, coords },
       {
         onSuccess: () => {
           toast.success(done ? toasts.stationCompleted : toasts.stationUncompleted);
