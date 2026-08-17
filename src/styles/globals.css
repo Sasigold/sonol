@@ -282,6 +282,12 @@
     /* Never below 16px body text (brief §3, rule 9) */
     font-size: 100%;
     -webkit-text-size-adjust: 100%;
+
+    /* Pan yes, zoom no. NOT `manipulation`, which only drops double-tap and
+       leaves pinch working. touch-action does not inherit, but the browser
+       intersects the values up the ancestor chain, so setting it here
+       constrains every descendant. See src/lib/no-zoom.ts. */
+    touch-action: pan-x pan-y;
   }
 
   body {

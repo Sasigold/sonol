@@ -170,6 +170,36 @@ Dark mode uses `--brand-400` / `--brand-300`, not `--brand-600`: `#3B5BDB` on
 
 ---
 
+## 5a. The shell does not scroll, and does not zoom
+
+`AppShell` is exactly one viewport tall (`h-dvh`) and clips. **`<main>` is the
+only scroll container in the app.** The header, the offline banner and the admin
+bottom bar are `shrink-0` rows of a frame that never moves — the bar is not
+_stuck_ to the bottom, it _is_ the bottom.
+
+The bar used to be `sticky bottom-0`. That measures correctly on desktop, but
+sticky is anchored to the document's own scroll, which is the one thing a phone
+does not keep still: iOS and Android resize the visual viewport as their
+toolbars collapse mid-scroll, and a `100dvh` flex column re-lays-out under the
+bar while the finger is still moving. Do not reintroduce `sticky` or `fixed`
+here; both compensate for a scroll the shell no longer has.
+
+**Owning the scroller means owning the scroll reset.** The browser resets the
+_document's_ scroll on navigation and knows nothing about ours, so `AppShell`
+zeroes `main.scrollTop` in a layout effect keyed on `pathname`. Assign the
+property, never call `scrollTo` — the jump must be instant, and jsdom
+implements `scrollTop` but not `Element.prototype.scrollTo`, so the method call
+throws in every test that renders the shell.
+
+**Zoom is off**, in three places, because no one of them is enough: the viewport
+meta (`user-scalable=no`), `touch-action: pan-x pan-y` on `<html>` (not
+`manipulation` — that leaves pinch working), and `src/lib/no-zoom.ts` for iOS
+Safari in a tab, which ignores the first and puts pinch out of reach of the
+second. This knowingly fails WCAG 1.4.4; the mitigation is that nothing needs
+zooming to be legible — see the note in that file before changing it.
+
+---
+
 ## 6. Every screen has four states
 
 Loading (skeleton, never a spinner), empty (illustrated, with a next action),

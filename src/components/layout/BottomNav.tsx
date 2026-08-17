@@ -28,7 +28,11 @@ export function BottomNav() {
     <>
       <nav
         aria-label={nav.home}
-        className="bg-surface border-border sticky bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)]"
+        // No `sticky`, no `fixed`: this is the last row of a shell that is
+        // exactly one viewport tall and does not scroll, so it cannot move.
+        // `shrink-0` matters — as a flex item it would otherwise be squeezed by
+        // a tall content area before the content area started scrolling.
+        className="bg-surface border-border shrink-0 border-t pb-[env(safe-area-inset-bottom)]"
       >
         <ul className="mx-auto flex w-full max-w-3xl items-stretch">
           <NavItem to="/" icon={Home} label={nav.home} end />

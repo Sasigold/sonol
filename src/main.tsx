@@ -10,6 +10,11 @@ import '@fontsource-variable/heebo';
 
 import './styles/globals.css';
 import { router } from './router';
+import { disableZoomGestures } from './lib/no-zoom';
+
+// Before first paint, not in an effect: an effect would leave a window in
+// which a pinch still zooms, and StrictMode would attach it twice.
+disableZoomGestures();
 
 const queryClient = new QueryClient({
   defaultOptions: {
