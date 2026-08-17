@@ -137,6 +137,20 @@ update public.profiles set is_admin = true where id = auth.uid();
 
 **כשמוסיפים טבלה או View — קודם revoke, אחר כך grant.**
 
+### תאריך יעד: מפתחות ה-API הישנים
+
+האפליקציה וה-Edge Functions משתמשים כרגע ב-`anon` וב-`service_role` הישנים.
+לפי התיעוד של Supabase הם ימשיכו לעבוד **עד סוף 2026** בלבד, ואז יש לעבור
+ל-publishable/secret keys. המשמעות המעשית:
+
+- בלקוח: `VITE_SUPABASE_ANON_KEY` יוחלף במפתח `sb_publishable_...`
+- ב-Edge Functions: `SUPABASE_SERVICE_ROLE_KEY` יוחלף בקריאה מתוך
+  `SUPABASE_SECRET_KEYS` (מבנה JSON לפי שם מפתח)
+
+שני המפתחות החדשים אינם JWT, ולכן יש לשלוח אותם בכותרת `apikey` ולא ב-
+`Authorization: Bearer`, ולכבות `verify_jwt` ולבצע את ההרשאה בקוד. זו לא בעיה
+היום — אבל זה מועד שכדאי לתכנן אליו ולא להיתקל בו.
+
 ---
 
 ## מבנה הפרויקט
