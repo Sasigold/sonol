@@ -10,10 +10,12 @@ import { BlockedPage } from '@/pages/blocked/BlockedPage';
 import { HomePage } from '@/pages/home/HomePage';
 import { AreaPage } from '@/pages/area/AreaPage';
 import { StationFormPage } from '@/pages/stations/StationFormPage';
+import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+import { UsersPage } from '@/pages/users/UsersPage';
+import { UserCreatePage } from '@/pages/users/UserCreatePage';
+import { UserEditPage } from '@/pages/users/UserEditPage';
 import { NotFoundPage } from '@/pages/not-found/NotFoundPage';
-import { PlaceholderPage } from '@/pages/placeholder/PlaceholderPage';
 import { ErrorState } from '@/components/common/ErrorState';
-import { nav } from '@/lib/copy';
 
 /**
  * A pathless root route owns the AuthProvider, so the provider sits inside the
@@ -55,14 +57,14 @@ export const router = createBrowserRouter([
               // guesses another area's id gets an empty result, not a leak.
               { path: '/areas/:areaId', element: <AreaPage /> },
 
-              // Admin only. Placeholders until phases 4-5.
+              // Admin only.
               {
                 element: <RequireAdmin />,
                 children: [
-                  { path: '/dashboard', element: <PlaceholderPage title={nav.dashboard} /> },
-                  { path: '/users', element: <PlaceholderPage title={nav.users} /> },
-                  { path: '/users/new', element: <PlaceholderPage title={nav.newUser} /> },
-                  { path: '/users/:id/edit', element: <PlaceholderPage title={nav.editUser} /> },
+                  { path: '/dashboard', element: <DashboardPage /> },
+                  { path: '/users', element: <UsersPage /> },
+                  { path: '/users/new', element: <UserCreatePage /> },
+                  { path: '/users/:id/edit', element: <UserEditPage /> },
                   { path: '/stations/new', element: <StationFormPage mode="create" /> },
                   { path: '/stations/:id/edit', element: <StationFormPage mode="edit" /> },
                 ],

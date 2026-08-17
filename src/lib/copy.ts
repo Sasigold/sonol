@@ -85,6 +85,10 @@ export const actions = {
    */
   toggleSort: 'הפוך סדר מיון',
   openMenu: 'פתח תפריט',
+  /** Filter chips on the users list (§8.8 requires the filters, not their labels). */
+  filterAll: 'הכל',
+  filterUnauthorized: 'לא רשאי',
+  search: 'חיפוש לפי שם או אימייל',
 } as const;
 
 /* 9.4 Status & labels -------------------------------------------------------- */
@@ -243,6 +247,13 @@ export const app = {
   missingConfig: 'תצורת החיבור לשרת חסרה. פנה למנהל המערכת.',
   notFound: 'הדף לא נמצא',
   toggleTheme: 'החלף ערכת נושא',
+  /**
+   * Added strings, not in §9. §8.8 requires a read-only note and a tooltip on
+   * the self-demotion guard but supplies text for neither.
+   */
+  readOnlyNote: 'שם ואימייל אינם ניתנים לעריכה לאחר יצירת המשתמש',
+  cannotDemoteSelf: 'לא ניתן להסיר לעצמך הרשאת ניהול',
+  passwordStrength: 'חוזק הסיסמה',
 } as const;
 
 export const copy = {
