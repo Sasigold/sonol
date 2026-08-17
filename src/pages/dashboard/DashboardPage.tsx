@@ -1,6 +1,15 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CheckCircle2, Circle, Download, Loader2, RotateCcw } from 'lucide-react';
+import {
+  CheckCircle2,
+  Circle,
+  Download,
+  History,
+  Loader2,
+  MapPinned,
+  RotateCcw,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -73,6 +82,26 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-h1 text-text">{nav.dashboard}</h1>
+
+      {/*
+        The bottom bar is full at five items, and both of these are
+        sit-at-a-desk screens rather than roadside ones — the dashboard is
+        where an admin already is when they need them.
+      */}
+      <nav className="flex flex-wrap gap-3">
+        <Button asChild variant="outline">
+          <Link to="/areas">
+            <MapPinned className="size-5" aria-hidden />
+            {nav.areas}
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/rounds">
+            <History className="size-5" aria-hidden />
+            {nav.history}
+          </Link>
+        </Button>
+      </nav>
 
       {isPending ? (
         <div className="flex flex-col gap-4" aria-busy="true">

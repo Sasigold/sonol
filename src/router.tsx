@@ -7,9 +7,11 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Toaster } from '@/components/ui/toaster';
 import { SignInPage } from '@/pages/signin/SignInPage';
 import { ForgotPasswordPage } from '@/pages/forgot-password/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/reset-password/ResetPasswordPage';
 import { BlockedPage } from '@/pages/blocked/BlockedPage';
 import { HomePage } from '@/pages/home/HomePage';
 import { AreaPage } from '@/pages/area/AreaPage';
+import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { NotFoundPage } from '@/pages/not-found/NotFoundPage';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageLoadingSkeleton } from '@/components/common/LoadingSkeleton';
@@ -32,6 +34,12 @@ const DashboardPage = lazy(async () => ({
 }));
 const UsersPage = lazy(async () => ({
   default: (await import('@/pages/users/UsersPage')).UsersPage,
+}));
+const AreasPage = lazy(async () => ({
+  default: (await import('@/pages/areas/AreasPage')).AreasPage,
+}));
+const RoundsPage = lazy(async () => ({
+  default: (await import('@/pages/rounds/RoundsPage')).RoundsPage,
 }));
 const UserCreatePage = lazy(async () => ({
   default: (await import('@/pages/users/UserCreatePage')).UserCreatePage,
@@ -72,6 +80,12 @@ export const router = createBrowserRouter([
       { path: '/signin', element: <SignInPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
 
+      // Public ON PURPOSE. The recovery link may belong to a user whose
+      // is_authorized is false; behind RequireAuth they would be sent to
+      // /blocked before they could choose a password. See the page for the
+      // full reasoning.
+      { path: '/reset-password', element: <ResetPasswordPage /> },
+
       // Public ON PURPOSE. /blocked signs out on mount; behind RequireAuth the
       // guard would see the vanished session and redirect to /signin before the
       // message could be read. See BlockedPage for the full reasoning.
@@ -85,6 +99,7 @@ export const router = createBrowserRouter([
             element: <AppShell />,
             children: [
               { path: '/', element: <HomePage /> },
+              { path: '/profile', element: <ProfilePage /> },
               // RLS decides which areas are actually readable; a worker who
               // guesses another area's id gets an empty result, not a leak.
               { path: '/areas/:areaId', element: <AreaPage /> },
@@ -106,6 +121,24 @@ export const router = createBrowserRouter([
                     element: (
                       <Lazy>
                         <UsersPage />
+                      </Lazy>
+                    ),
+                  },
+                  // Sits beside '/areas/:areaId' — the worker's area screen —
+                  // without shadowing it: a static segment is not a parameter.
+                  {
+                    path: '/areas',
+                    element: (
+                      <Lazy>
+                        <AreasPage />
+                      </Lazy>
+                    ),
+                  },
+                  {
+                    path: '/rounds',
+                    element: (
+                      <Lazy>
+                        <RoundsPage />
                       </Lazy>
                     ),
                   },

@@ -1,0 +1,43 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to the same branch cancels the first run — the older result is
+# never the one anyone acts on.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # The floor the README states. `cache: npm` keys on package-lock.json.
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # typecheck, eslint, the RTL guard, the token-scale guard, prettier,
+      # vitest and the production build — the same command the contributing
+      # rules require before a commit.
+      #
+      # `npm run test:e2e` is deliberately NOT here: the admin spec calls
+      # reset_round, which clears every completion in whatever project the
+      # environment points at. It stays behind E2E_ALLOW_WRITES=1 and a
+      # disposable project.
+      - run: npm run verify
+        env:
+          # The client throws at startup without these, and `vite build`
+          # inlines whatever is set. Obvious placeholders: CI builds the
+          # bundle, it never talks to a real project.
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key

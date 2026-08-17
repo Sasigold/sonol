@@ -44,11 +44,80 @@ export const forgotPasswordSchema = z.object({ email });
 
 export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 
-/** Reused by user creation (§8.8). */
+/** Reused by user creation (§8.8) and by both new-password forms. */
 export const passwordCreate = z
   .string()
   .min(1, { message: validation.required })
   .min(8, { message: validation.passwordMin8 });
+
+/**
+ * Choosing a new password — the recovery screen and the profile screen.
+ *
+ * Same 8-character rule as user creation, and the same client-side-only
+ * caveat: Supabase Auth's server minimum stays at its default of 6, so this
+ * governs the UI and not the API.
+ */
+export const newPasswordSchema = z
+  .object({
+    password: passwordCreate,
+    passwordConfirm: z.string().min(1, { message: validation.required }),
+  })
+  .refine((values) => values.password === values.passwordConfirm, {
+    message: validation.passwordsDoNotMatch,
+    path: ['passwordConfirm'],
+  });
+
+export type NewPasswordValues = z.infer<typeof newPasswordSchema>;
+
+/**
+ * Israeli phone numbers, normalised before validation so a user may type
+ * `050-123-4567`, `0501234567` or `+972 50 123 4567` and be believed.
+ *
+ * Optional: the column is nullable and a field worker without a number on
+ * file must still be able to save their display name.
+ */
+export function normalisePhone(input: string): string {
+  return input.replace(/[\s\-()]/g, '').replace(/^\+972/, '0');
+}
+
+const phone = z
+  .string()
+  .trim()
+  .transform(normalisePhone)
+  .refine((value) => value.length === 0 || /^0\d{8,9}$/.test(value), {
+    message: validation.invalidPhone,
+  });
+
+/** The user's own contact details — the only profile columns they may write. */
+export const profileSchema = z.object({
+  display_name: z
+    .string()
+    .trim()
+    .min(1, { message: validation.required })
+    .min(2, { message: validation.nameMin2 })
+    .max(60, { message: validation.nameMin2 }),
+  phone_number: phone,
+});
+
+export type ProfileValues = z.infer<typeof profileSchema>;
+
+/**
+ * Area add / rename.
+ *
+ * Only the name. `sort_order` is never typed — areas are reordered with the
+ * up/down buttons, which swap two rows' existing values — so there is no user
+ * input to validate and no way to enter a number that collides.
+ */
+export const areaSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { message: validation.required })
+    .min(2, { message: validation.nameMin2 })
+    .max(60, { message: validation.nameMin2 }),
+});
+
+export type AreaValues = z.infer<typeof areaSchema>;
 
 /**
  * Station add/edit (§8.6).

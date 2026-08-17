@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,12 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/common/ErrorState';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { PasswordInput } from '@/components/common/PasswordInput';
 import { AreaChips } from '@/components/users/AreaChips';
 import { useAuth } from '@/contexts/auth-context';
 import { useAllAreas, type Area } from '@/hooks/useAreas';
-import { useUpdateUser, useUser, type UserRow } from '@/hooks/useUsers';
+import { useResetUserPassword, useUpdateUser, useUser, type UserRow } from '@/hooks/useUsers';
 import { toHebrewError } from '@/lib/errors';
-import { actions, app, fields, nav, states, toasts } from '@/lib/copy';
+import { newPasswordSchema, type NewPasswordValues } from '@/lib/schemas';
+import { actions, app, dialogs, fields, nav, states, toasts, users as usersCopy } from '@/lib/copy';
 
 export function UserEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -157,6 +162,116 @@ function UserEditForm({ user, areas }: { user: UserRow; areas: Area[] }) {
         {update.isPending ? <Loader2 className="size-5 animate-spin" aria-hidden /> : null}
         {actions.save}
       </Button>
+
+      <ResetPasswordSection user={user} />
+    </>
+  );
+}
+
+/**
+ * Set a new password for this user.
+ *
+ * Kept out of the save button above on purpose: the flags and areas form is
+ * idempotent and re-savable, while this takes effect the moment it is
+ * confirmed and locks the person out of their old password. Bundling them
+ * would mean an admin adjusting an area assignment could not avoid also
+ * reissuing a password.
+ */
+function ResetPasswordSection({ user }: { user: UserRow }) {
+  const reset = useResetUserPassword();
+  const [pendingValues, setPendingValues] = useState<NewPasswordValues | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset: resetForm,
+    formState: { errors },
+  } = useForm<NewPasswordValues>({
+    resolver: zodResolver(newPasswordSchema),
+    defaultValues: { password: '', passwordConfirm: '' },
+  });
+
+  return (
+    <>
+      <form
+        noValidate
+        className="border-border flex flex-col gap-4 rounded-md border p-4"
+        onSubmit={(event) => {
+          // Validate first, confirm second — the dialog must never be the thing
+          // that discovers the passwords do not match.
+          void handleSubmit((values) => {
+            setPendingValues(values);
+          })(event);
+        }}
+      >
+        <h2 className="text-h3 text-text">{dialogs.resetUserPassword.title}</h2>
+        <p className="text-caption text-text-muted">{usersCopy.passwordIntro}</p>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="user-password">{fields.newPassword}</Label>
+          <PasswordInput
+            id="user-password"
+            autoComplete="new-password"
+            aria-invalid={errors.password ? true : undefined}
+            {...register('password')}
+          />
+          {errors.password ? (
+            <p role="alert" className="text-small text-danger">
+              {errors.password.message}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="user-password-confirm">{fields.newPasswordConfirm}</Label>
+          <PasswordInput
+            id="user-password-confirm"
+            autoComplete="new-password"
+            aria-invalid={errors.passwordConfirm ? true : undefined}
+            {...register('passwordConfirm')}
+          />
+          {errors.passwordConfirm ? (
+            <p role="alert" className="text-small text-danger">
+              {errors.passwordConfirm.message}
+            </p>
+          ) : null}
+        </div>
+
+        <Button type="submit" variant="outline" size="wide" disabled={reset.isPending}>
+          {reset.isPending ? <Loader2 className="size-5 animate-spin" aria-hidden /> : null}
+          {actions.setNewPassword}
+        </Button>
+      </form>
+
+      <ConfirmDialog
+        open={pendingValues !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingValues(null);
+        }}
+        title={dialogs.resetUserPassword.title}
+        description={dialogs.resetUserPassword.body(user.display_name)}
+        confirmLabel={actions.setNewPassword}
+        destructive
+        pending={reset.isPending}
+        onConfirm={() => {
+          if (!pendingValues) return;
+          reset.mutate(
+            { userId: user.id, password: pendingValues.password },
+            {
+              onSuccess: () => {
+                setPendingValues(null);
+                // Never leave a password sitting in a form on a shared tablet.
+                resetForm({ password: '', passwordConfirm: '' });
+                toast.success(toasts.userPasswordReset);
+              },
+              onError: (error) => {
+                setPendingValues(null);
+                toast.error(toHebrewError(error));
+              },
+            },
+          );
+        }}
+      />
     </>
   );
 }

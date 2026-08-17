@@ -4,7 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toggleStationRpc } from '@/lib/rpc';
 import { offlineQueue } from '@/lib/offline-queue';
-import { stationKeys, useToggleStation, type Station } from './useStations';
+import { filterStations, stationKeys, useToggleStation, type Station } from './useStations';
 
 vi.mock('@/lib/rpc', () => ({ toggleStationRpc: vi.fn() }));
 
@@ -145,5 +145,42 @@ describe('useToggleStation', () => {
     // Invalidating here would replace the optimistic row with the server's
     // stale answer and un-mark the station in front of the worker.
     expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe('filterStations', () => {
+  const list = [
+    station({ id: 'a', name: 'תחנת רמלה', sort_number: 12 }),
+    station({ id: 'b', name: 'תחנת לוד', sort_number: 12.5 }),
+    station({ id: 'c', name: 'פז אשדוד', sort_number: 3 }),
+  ];
+
+  function ids(term: string): string[] {
+    return filterStations(list, term).map((match) => match.id);
+  }
+
+  it('returns everything for an empty or whitespace term', () => {
+    expect(ids('')).toEqual(['a', 'b', 'c']);
+    expect(ids('   ')).toEqual(['a', 'b', 'c']);
+  });
+
+  it('matches part of a name', () => {
+    expect(ids('רמלה')).toEqual(['a']);
+    expect(ids('תחנת')).toEqual(['a', 'b']);
+  });
+
+  it('matches the station number as a prefix, so 12 finds 12 and 12.5', () => {
+    expect(ids('12')).toEqual(['a', 'b']);
+    expect(ids('12.5')).toEqual(['b']);
+  });
+
+  it('returns nothing when nothing matches', () => {
+    expect(ids('חיפה')).toEqual([]);
+  });
+
+  it('does not mutate or reorder the input', () => {
+    const before = list.map((item) => item.id);
+    filterStations(list, 'תחנת');
+    expect(list.map((item) => item.id)).toEqual(before);
   });
 });

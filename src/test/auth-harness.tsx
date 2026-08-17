@@ -7,6 +7,8 @@ export function makeProfile(overrides: Partial<Profile> = {}): Profile {
     id: '00000000-0000-0000-0000-000000000001',
     email: 'worker@sonol.test',
     display_name: 'עובד בדיקה',
+    photo_url: null,
+    phone_number: null,
     is_admin: false,
     is_authorized: true,
     completed_count: 0,

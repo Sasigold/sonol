@@ -42,6 +42,28 @@ describe('toHebrewError', () => {
     );
   });
 
+  it('maps the constraint violations area management can produce', () => {
+    // A second area named "שרון" hits the unique index; deleting an area that
+    // still has stations hits the `on delete restrict` FK. Both used to fall
+    // through to the generic message, which told the admin nothing.
+    expect(
+      toHebrewError({ code: '23505', message: 'duplicate key value violates unique constraint' }),
+    ).toBe(errors.duplicateValue);
+    expect(
+      toHebrewError({ code: '23503', message: 'update or delete on table "areas" violates' }),
+    ).toBe(errors.stillReferenced);
+  });
+
+  it('maps what auth.updateUser returns on the new-password screens', () => {
+    expect(
+      toHebrewError({ message: 'New password should be different from the old password.' }),
+    ).toBe(errors.samePassword);
+    expect(toHebrewError({ message: 'Auth session missing!' })).toBe(errors.recoveryLinkInvalid);
+    expect(toHebrewError({ message: 'Token has expired or is invalid' })).toBe(
+      errors.recoveryLinkInvalid,
+    );
+  });
+
   it('maps the RPC exceptions a user can actually trigger', () => {
     expect(toHebrewError({ message: 'admin only' })).toBe(errors.permissionDenied);
     expect(toHebrewError({ message: 'not allowed to work in this area' })).toBe(
