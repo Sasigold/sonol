@@ -152,6 +152,13 @@ export type Database = {
             foreignKeyName: "station_completions_round_id_fkey"
             columns: ["round_id"]
             isOneToOne: false
+            referencedRelation: "round_stats"
+            referencedColumns: ["round_id"]
+          },
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
             referencedRelation: "rounds"
             referencedColumns: ["id"]
           },
@@ -368,6 +375,57 @@ export type Database = {
           station_count: number | null
         }
         Relationships: []
+      }
+      round_stats: {
+        Row: {
+          completed_count: number | null
+          ended_at: string | null
+          label: string | null
+          round_id: string | null
+          started_at: string | null
+          uncompleted_count: number | null
+          worker_count: number | null
+        }
+        Relationships: []
+      }
+      round_user_stats: {
+        Row: {
+          completed_count: number | null
+          round_id: string | null
+          uncompleted_count: number | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "round_stats"
+            referencedColumns: ["round_id"]
+          },
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_stats"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_stats: {
         Row: {

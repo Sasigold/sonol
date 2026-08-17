@@ -6,7 +6,8 @@ import { offlineQueue } from '@/lib/offline-queue';
 import { SUPABASE_CACHE_NAME } from '@/lib/cache-names';
 import { AuthContext, type AuthState, type Profile } from './auth-context';
 
-const PROFILE_COLUMNS = 'id, email, display_name, is_admin, is_authorized, completed_count';
+const PROFILE_COLUMNS =
+  'id, email, display_name, photo_url, phone_number, is_admin, is_authorized, completed_count';
 
 async function fetchProfile(userId: string): Promise<Profile> {
   const { data, error } = await supabase

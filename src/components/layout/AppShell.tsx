@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { LogOut, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -37,10 +37,26 @@ export function AppShell() {
     <div className="bg-bg flex min-h-dvh flex-col">
       <header className="bg-surface border-border sticky top-0 z-40 border-b">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 p-4">
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-h3 text-text truncate">{profile?.display_name ?? app.name}</span>
-            {profile ? <RoleBadge isAdmin={profile.is_admin} className="self-start" /> : null}
-          </div>
+          {/*
+            The header identity is the entry point to /profile — the bottom nav
+            is admin-only, so a field worker needs a route to their own screen
+            that does not depend on it.
+          */}
+          <Link to="/profile" className="flex min-w-0 items-center gap-3" aria-label={nav.profile}>
+            {profile?.photo_url ? (
+              <img
+                src={profile.photo_url}
+                alt=""
+                className="size-12 shrink-0 rounded-full object-cover"
+              />
+            ) : null}
+            <span className="flex min-w-0 flex-col gap-1">
+              <span className="text-h3 text-text truncate">
+                {profile?.display_name ?? app.name}
+              </span>
+              {profile ? <RoleBadge isAdmin={profile.is_admin} className="self-start" /> : null}
+            </span>
+          </Link>
 
           <div className="flex shrink-0 items-center gap-2">
             <Button

@@ -53,10 +53,15 @@ npm run dev
 
 ## הקמת בסיס הנתונים
 
-### 1. הרצת המיגרציה
+### 1. הרצת המיגרציות
 
 `supabase/migrations/0001_initial_schema.sql` מכיל את כל הסכימה: טבלאות,
 אינדקסים, טריגרים, מדיניות RLS, פונקציות RPC, Views, אחסון ו-Realtime.
+
+`0002_round_history.sql` מוסיף שני Views לקריאה בלבד — `round_stats` ו-
+`round_user_stats` — שעליהם בנוי מסך היסטוריית הסבבים. שניהם
+`security_invoker`, כך שה-RLS של `station_completions` ממשיך לחול: מנהל רואה
+את כולם, עובד רואה את עצמו בלבד.
 
 דרך ה-CLI:
 
@@ -79,6 +84,11 @@ update public.profiles
 ```
 
 ### 3. הזנת האזורים
+
+מסך **ניהול אזורים** (דשבורד ← ניהול אזורים) מאפשר הוספה, שינוי שם, סידור
+ומחיקה. אזור שיש בו תחנות אינו נמחק — ה-FK הוא `on delete restrict`.
+
+לטעינה ראשונית בבת אחת אפשר גם:
 
 ```sql
 insert into public.areas (name, sort_order) values
@@ -155,6 +165,28 @@ update public.profiles set is_admin = true where id = auth.uid();
 היום — אבל זה מועד שכדאי לתכנן אליו ולא להיתקל בו.
 
 ---
+
+## חשבון אישי
+
+- **איפוס סיסמה** — `/forgot-password` שולח קישור, והקישור נוחת ב-
+  `/reset-password`, שם נבחרת הסיסמה החדשה בפועל (`auth.updateUser`). המסך
+  ציבורי בכוונה, כמו `/blocked`: הסשן שנוצר מהקישור עשוי להיות של משתמש שאינו
+  רשאי, ומאחורי `RequireAuth` הוא היה מועבר ל-`/blocked` לפני שהספיק לבחור
+  סיסמה.
+- **הפרופיל שלי** — `/profile`, נגיש מהשם בכותרת בכל מסך. שם מלא, טלפון,
+  תמונה ושינוי סיסמה. השם אינו קישוט: `complete_station` חותם אותו לתוך
+  `stations.completed_by_name`, כך שהוא מופיע ליד כל תחנה שבוצעה ובדשבורד.
+- התמונה נשמרת ב-bucket `avatars` תחת `<uid>/avatar` — הנתיב חייב להתחיל
+  במזהה המשתמש, כי מדיניות האחסון בודקת בדיוק את זה.
+
+## היסטוריית סבבים
+
+`rounds` ו-`station_completions` נכתבו מאז 0001 ולא נקראו על ידי אף מסך: כל
+סבב שנסגר הפך לבלתי נגיש מהאפליקציה. `/rounds` (דשבורד ← היסטוריית סבבים)
+מציג את הסבבים מהחדש לישן, פותח כל אחד לפירוט לפי עובד, ומייצא ל-CSV.
+
+שם העובד מגיע מ-`user_name` שנשמר בשורת הלוג ולא מ-JOIN לפרופיל — כך סבב ישן
+ממשיך להציג את מי שביצע גם אחרי שהחשבון נמחק.
 
 ## עבודה ללא חיבור
 
@@ -236,13 +268,24 @@ src/
 e2e/          תסריטי Playwright   (חסומים מאחורי משתנה סביבה)
 scripts/      בדיקות RTL וסולם הטוקנים, יצירת אייקונים
 supabase/
-  migrations/ 0001_initial_schema.sql
+  migrations/ 0001_initial_schema.sql  0002_round_history.sql
   functions/  admin-create-user  admin-delete-user
+.github/
+  workflows/  verify.yml          (CI)
+vercel.json                       (SPA fallback)
 ```
 
 `CLAUDE.md` מרכז את כללי הפיתוח — RTL, טוקנים, מחרוזות, טיפוסים והרשאות.
 
 ---
+
+## אינטגרציה רציפה
+
+`.github/workflows/verify.yml` מריץ `npm run verify` על כל Pull Request ועל כל
+דחיפה ל-`main` — בדיקת טיפוסים, ESLint, שומר ה-RTL, שומר סולם הטוקנים,
+Prettier, Vitest והבילד.
+
+בדיקות ה-E2E **אינן** רצות שם בכוונה: תסריט הניהול קורא ל-`reset_round`.
 
 ## פריסה
 
@@ -251,5 +294,8 @@ npm run build     # התוצר ב-dist/
 ```
 
 אתר סטטי רגיל. יש להגדיר בסביבת הפריסה את `VITE_SUPABASE_URL` ואת
-`VITE_SUPABASE_ANON_KEY`, ולוודא ש-SPA fallback מפנה כל נתיב ל-`index.html`
-(האפליקציה משתמשת ב-`createBrowserRouter`).
+`VITE_SUPABASE_ANON_KEY`.
+
+**SPA fallback הוא חובה** — האפליקציה משתמשת ב-`createBrowserRouter`, ובלעדיו
+רענון בכתובת כמו `/areas/<id>` יחזיר 404. `vercel.json` שבשורש עושה זאת עבור
+Vercel; בהוסטינג אחר יש להגדיר את המקבילה (ב-Netlify: `/* /index.html 200`).

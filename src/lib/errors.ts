@@ -25,7 +25,25 @@ const AUTH_MESSAGE_MAP: readonly (readonly [RegExp, string])[] = [
   [/already been registered/i, errors.emailAlreadyRegistered],
   [/password should be at least/i, errors.passwordTooShort],
   [/password.*too short/i, errors.passwordTooShort],
+  // auth.updateUser refuses a password identical to the current one.
+  [/should be different from the old password/i, errors.samePassword],
+  [/new password should be different/i, errors.samePassword],
+  // A recovery link that was already used, or expired.
+  [/auth session missing/i, errors.recoveryLinkInvalid],
+  [/token has expired or is invalid/i, errors.recoveryLinkInvalid],
 ];
+
+/**
+ * Constraint violations, reachable since area management arrived.
+ *
+ * 23505 is the unique index on `areas.name`; 23503 is the `on delete restrict`
+ * from `stations.area_id`, which is what stops an area disappearing out from
+ * under its stations.
+ */
+const CONSTRAINT_CODES: Readonly<Record<string, string>> = {
+  '23505': errors.duplicateValue,
+  '23503': errors.stillReferenced,
+};
 
 export function isOfflineLike(message: string): boolean {
   // supabase-js surfaces a dropped connection as a bare TypeError from fetch;
@@ -69,6 +87,9 @@ export function toHebrewError(error: unknown): string {
 
   const code = hasStringProp(error, 'code') ? error.code : '';
   if (PERMISSION_CODES.has(code)) return errors.permissionDenied;
+
+  const constraint = CONSTRAINT_CODES[code];
+  if (constraint !== undefined) return constraint;
 
   if (/permission denied/i.test(message) || /row-level security/i.test(message)) {
     return errors.permissionDenied;

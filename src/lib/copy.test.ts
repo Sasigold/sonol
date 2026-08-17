@@ -14,6 +14,10 @@ describe('copy', () => {
     expect(copy.labels.roundProgress(12, 30)).toBe('הושלמו 12 מתוך 30 תחנות');
     expect(copy.labels.completedByAt('14/3 09:20', 'דנה')).toBe('בוצע ב-14/3 09:20 ע"י דנה');
     expect(copy.offline.pendingOperations(2)).toBe('2 פעולות ממתינות לסנכרון');
+    expect(copy.labels.myCompletions(5)).toBe('ביצעת 5 תחנות בסבב הנוכחי');
+    expect(copy.labels.stationsInArea(18)).toBe('18 תחנות');
+    expect(copy.labels.roundCompletions(120)).toBe('120 ביצועים');
+    expect(copy.labels.searchResults(0)).toBe('0 תוצאות');
   });
 
   it('names the affected entity in every destructive dialog', () => {
@@ -29,6 +33,12 @@ describe('copy', () => {
     expect(copy.dialogs.deleteUser.body('דנה')).toBe(
       'האם אתה בטוח שברצונך למחוק את דנה? לא ניתן לבטל פעולה זו.',
     );
+    expect(copy.dialogs.deleteArea.body('שרון')).toBe(
+      'האם אתה בטוח שברצונך למחוק את שרון? לא ניתן לבטל פעולה זו.',
+    );
+    expect(copy.dialogs.deleteArea.hasStations(4)).toBe(
+      'לא ניתן למחוק: יש באזור 4 תחנות. העבר או מחק אותן קודם.',
+    );
   });
 
   it('keeps the reset-round confirmation word matching its instruction', () => {
@@ -38,8 +48,16 @@ describe('copy', () => {
 
   it('contains no Latin characters in user-facing text', () => {
     // Guards defect 19: English strings leaking into a Hebrew app.
-    // Latin is allowed only where the brief itself uses it (e.g. "ייצוא ל-CSV").
-    const ALLOWED = new Set<string>([copy.actions.exportCsv]);
+    // Latin is allowed only where the brief itself uses it (e.g. "ייצוא ל-CSV")
+    // or where the Latin run IS the term: file formats and a size in MB have
+    // no Hebrew spelling a user would recognise.
+    const ALLOWED = new Set<string>([
+      copy.actions.exportCsv,
+      copy.actions.exportHistory,
+      copy.profile.photoHint,
+      copy.errors.fileTooLarge,
+      copy.errors.unsupportedImage,
+    ]);
     const latin = /[A-Za-z]/;
 
     const walk = (value: unknown, path: string): void => {

@@ -2,10 +2,23 @@ import { createContext, use } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import type { Tables } from '@/lib/supabase';
 
-/** Only the columns the client is allowed to read and actually needs. */
+/**
+ * Only the columns the client is allowed to read and actually needs.
+ *
+ * `photo_url` and `phone_number` joined the list when the profile screen
+ * arrived: they are the two columns — alongside `display_name` — that the
+ * grants let a user write on their own row.
+ */
 export type Profile = Pick<
   Tables<'profiles'>,
-  'id' | 'email' | 'display_name' | 'is_admin' | 'is_authorized' | 'completed_count'
+  | 'id'
+  | 'email'
+  | 'display_name'
+  | 'photo_url'
+  | 'phone_number'
+  | 'is_admin'
+  | 'is_authorized'
+  | 'completed_count'
 >;
 
 /**

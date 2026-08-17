@@ -25,6 +25,19 @@ export const nav = {
   home: 'בית',
   add: 'הוסף',
   signOut: 'יציאה',
+  /**
+   * Added screens, not in §9.
+   *
+   * §8.2 ends at "a reset link was sent" and never describes the screen that
+   * link opens, so the recovery flow had nowhere to land. The rest are the
+   * admin and self-service screens the schema always supported.
+   */
+  resetPasswordTitle: 'בחירת סיסמה חדשה',
+  profile: 'הפרופיל שלי',
+  areas: 'ניהול אזורים',
+  newArea: 'אזור חדש',
+  editArea: 'עריכת אזור',
+  history: 'היסטוריית סבבים',
 } as const;
 
 /* 9.2 Fields ----------------------------------------------------------------- */
@@ -54,6 +67,19 @@ export const fields = {
    */
   showPassword: 'הצג סיסמה',
   hidePassword: 'הסתר סיסמה',
+  /* Profile, area management and round history — screens §9 does not cover. */
+  newPassword: 'סיסמה חדשה',
+  newPasswordConfirm: 'אימות הסיסמה החדשה',
+  phone: 'טלפון',
+  photo: 'תמונת פרופיל',
+  areaName: 'שם האזור',
+  areaOrder: 'סדר תצוגה',
+  round: 'סבב',
+  roundOpen: 'סבב פעיל',
+  startedAt: 'התחיל',
+  endedAt: 'הסתיים',
+  completions: 'ביצועים',
+  stations: 'תחנות',
 } as const;
 
 /* 9.3 Actions ---------------------------------------------------------------- */
@@ -89,6 +115,18 @@ export const actions = {
   filterAll: 'הכל',
   filterUnauthorized: 'לא רשאי',
   search: 'חיפוש לפי שם או אימייל',
+  /* Profile, area management, round history and the station search. */
+  setNewPassword: 'שמור סיסמה חדשה',
+  changePassword: 'שינוי סיסמה',
+  uploadPhoto: 'העלאת תמונה',
+  removePhoto: 'הסרת תמונה',
+  addArea: 'הוספת אזור',
+  rename: 'שינוי שם',
+  moveUp: 'העלה בסדר התצוגה',
+  moveDown: 'הורד בסדר התצוגה',
+  searchStations: 'חיפוש לפי שם או מספר תחנה',
+  clearSearch: 'ניקוי החיפוש',
+  exportHistory: 'ייצוא היסטוריה ל-CSV',
 } as const;
 
 /* 9.4 Status & labels -------------------------------------------------------- */
@@ -109,6 +147,13 @@ export const labels = {
   remainingShort: 'נשאר',
   hasEnvelope: 'יש מעטפה',
   hasFlyers: 'יש פליירים',
+  /* Profile, area management and round history. */
+  myCompletions: (n: number) => `ביצעת ${n} תחנות בסבב הנוכחי`,
+  stationsInArea: (n: number) => `${n} תחנות`,
+  roundCompletions: (n: number) => `${n} ביצועים`,
+  roundWorkers: (n: number) => `${n} עובדים`,
+  searchResults: (n: number) => `${n} תוצאות`,
+  stillOpen: 'פעיל',
 } as const;
 
 /* 9.5 Dialogs ---------------------------------------------------------------- */
@@ -144,6 +189,20 @@ export const dialogs = {
     title: 'יציאה מהמערכת',
     body: 'האם ברצונך להתנתק?',
   },
+  deleteArea: {
+    title: 'מחיקת אזור',
+    body: (name: string) => `האם אתה בטוח שברצונך למחוק את ${name}? לא ניתן לבטל פעולה זו.`,
+    /**
+     * The FK from stations.area_id is `on delete restrict`, so the database
+     * refuses this anyway — but a Hebrew sentence naming the count is a better
+     * answer than a refused write.
+     */
+    hasStations: (n: number) => `לא ניתן למחוק: יש באזור ${n} תחנות. העבר או מחק אותן קודם.`,
+  },
+  removePhoto: {
+    title: 'הסרת תמונת הפרופיל',
+    body: 'התמונה תוסר מהפרופיל שלך.',
+  },
 } as const;
 
 /* 9.6 Errors ----------------------------------------------------------------- */
@@ -155,6 +214,19 @@ export const errors = {
   offline: 'אין חיבור לאינטרנט. הפעולה תישמר ותסונכרן בהמשך.',
   permissionDenied: 'אין לך הרשאה לבצע פעולה זו',
   generic: 'אירעה שגיאה. נסה שוב.',
+  /**
+   * Added codes, not in §9.6.
+   *
+   * The first two are Postgres constraint violations that only became
+   * reachable once area management existed; the last two come from
+   * `auth.updateUser` on the new password screens.
+   */
+  duplicateValue: 'הערך שהוזן כבר קיים במערכת',
+  stillReferenced: 'לא ניתן למחוק: קיימות רשומות המשויכות לפריט זה',
+  samePassword: 'הסיסמה החדשה חייבת להיות שונה מהסיסמה הנוכחית',
+  recoveryLinkInvalid: 'הקישור אינו תקף או שפג תוקפו',
+  fileTooLarge: 'הקובץ גדול מדי. הגודל המרבי הוא 2MB.',
+  unsupportedImage: 'סוג הקובץ אינו נתמך. יש להעלות JPG, PNG או WebP.',
 } as const;
 
 /* 9.6 Validation ------------------------------------------------------------- */
@@ -176,6 +248,8 @@ export const validation = {
   stationNumberTaken: 'מספר תחנה זה כבר קיים באזור',
   cannotParseLocation: 'לא ניתן לחלץ מיקום מהקישור',
   nameMin2: 'השם חייב להכיל לפחות 2 תווים',
+  /* Profile and area management. */
+  invalidPhone: 'מספר טלפון לא תקין',
 } as const;
 
 /* 9.7 Empty & error states --------------------------------------------------- */
@@ -200,6 +274,19 @@ export const states = {
    */
   loading: 'טוען…',
   noStationLocation: 'לא הוגדר מיקום לתחנה זו',
+  /* Empty states for the screens added after §9 was written. */
+  noAreas: {
+    title: 'עדיין לא הוגדרו אזורים',
+    body: 'הוסף אזור כדי שאפשר יהיה לשייך אליו תחנות ומשתמשים',
+  },
+  noRounds: {
+    title: 'אין עדיין היסטוריית סבבים',
+    body: 'סבב נסגר ונפתח מחדש בכל פעם שמאפסים את המערכת',
+  },
+  noSearchResults: {
+    title: 'לא נמצאו תחנות',
+    body: 'נסה מונח חיפוש אחר',
+  },
 } as const;
 
 /* 9.8 Toasts ----------------------------------------------------------------- */
@@ -215,6 +302,14 @@ export const toasts = {
   userDeleted: 'המשתמש נמחק',
   permissionsUpdated: 'ההרשאות עודכנו',
   resetEmailSent: 'נשלח אליך אימייל לאיפוס הסיסמה',
+  /* Profile and area management. */
+  passwordChanged: 'הסיסמה עודכנה',
+  profileUpdated: 'הפרופיל עודכן',
+  photoUpdated: 'תמונת הפרופיל עודכנה',
+  photoRemoved: 'תמונת הפרופיל הוסרה',
+  areaAdded: 'האזור נוסף',
+  areaUpdated: 'האזור עודכן',
+  areaDeleted: 'האזור נמחק',
 } as const;
 
 /* 9.9 Offline ---------------------------------------------------------------- */
@@ -239,6 +334,37 @@ export const update = {
 export const forgotPassword = {
   intro: 'הזן את כתובת האימייל שאיתה נרשמת, ונשלח אליך קישור לאיפוס הסיסמה.',
   sent: 'אם הכתובת קיימת במערכת, נשלח אליה קישור לאיפוס הסיסמה. בדוק גם בתיקיית הספאם.',
+} as const;
+
+/* Reset password (the screen the §8.2 email link opens) -----------------------
+   Authored: §8.2 stops at "a link was sent" and never describes this screen. */
+export const resetPassword = {
+  intro: 'בחר סיסמה חדשה לחשבון שלך.',
+  /** Shown when the page is opened without a valid recovery session. */
+  invalid: 'הקישור אינו תקף או שפג תוקפו. אפשר לבקש קישור חדש.',
+  requestNew: 'בקשת קישור חדש',
+  done: 'הסיסמה הוחלפה. אפשר להמשיך לעבוד.',
+  continue: 'המשך לאפליקציה',
+} as const;
+
+/* Profile (§9 has no self-service screen) ------------------------------------- */
+export const profile = {
+  contactIntro: 'השם הזה מוצג ליד כל תחנה שביצעת ובדשבורד המנהל.',
+  passwordIntro: 'שינוי הסיסמה מתבצע מיד ואינו מנתק אותך מהמכשירים האחרים.',
+  photoHint: 'JPG, PNG או WebP, עד 2MB',
+  emailReadOnly: 'האימייל אינו ניתן לשינוי',
+} as const;
+
+/* Area management (§9 has no area screen) ------------------------------------- */
+export const areas = {
+  intro: 'האזורים קובעים לאילו תחנות עובד יכול לגשת, ואת סדר ההצגה במסך הבית.',
+  orderHint: 'הסדר כאן הוא הסדר שבו האזורים מוצגים לעובדים',
+} as const;
+
+/* Round history (§9 has no history screen) ------------------------------------ */
+export const history = {
+  intro: 'כל איפוס סוגר סבב ופותח חדש. הנתונים של הסבבים הקודמים נשמרים.',
+  perWorker: 'פירוט לפי עובד',
 } as const;
 
 /* Blocked screen (§8.3) ------------------------------------------------------ */
@@ -278,6 +404,10 @@ export const copy = {
   offline,
   update,
   forgotPassword,
+  resetPassword,
+  profile,
+  areas,
+  history,
   blocked,
   app,
 } as const;

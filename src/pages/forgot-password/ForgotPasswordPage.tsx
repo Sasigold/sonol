@@ -27,8 +27,11 @@ export function ForgotPasswordPage() {
 
   async function onSubmit(values: ForgotPasswordValues): Promise<void> {
     setFormError(null);
+    // /reset-password, not /signin: the link carries a recovery session, and
+    // landing it on the sign-in screen signed the user in with the OLD password
+    // still in force and no way to choose a new one.
     const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-      redirectTo: `${window.location.origin}/signin`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     // Only claim success when the call actually succeeded (§8.2). The original
     // showed the confirmation unconditionally.
