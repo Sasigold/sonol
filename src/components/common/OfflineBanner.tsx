@@ -22,7 +22,9 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="bg-warning-bg text-text border-border flex items-center justify-center gap-2 border-b p-3"
+      // `shrink-0`: a row of the non-scrolling shell, so it must not be
+      // compressed by a tall content area.
+      className="bg-warning-bg text-text border-border flex shrink-0 items-center justify-center gap-2 border-b p-3"
     >
       {online ? (
         <CloudUpload className="text-warning size-5 shrink-0" aria-hidden />

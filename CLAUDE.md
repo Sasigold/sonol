@@ -43,6 +43,28 @@ block element, `direction: ltr` makes `text-align: start` resolve to _left_ and
 strands the block at the left margin of an RTL page. Put it on an inline span
 inside a normally-aligned block.
 
+> **Radix does not read `dir` off the document.** It resolves direction from a
+> `DirectionProvider` context and falls back to **`'ltr'`** when there is none —
+> then writes that fallback out as a real `dir` attribute on the element. An
+> attribute beats the `dir="rtl"` on `<html>`, and portalled content (menus,
+> listboxes) is not even a descendant of the app tree it would inherit from.
+>
+> Left unset it broke three things at once: `DropdownMenu` (icons on the wrong
+> side of their labels, and the menu anchored to the wrong edge — floating-ui
+> reads the computed direction of the element it is positioning), `Select` (the
+> stamp lands on the trigger too, so the chevron and the value swapped sides),
+> and `Tabs` — the widest, because the Tabs root wraps the whole station list in
+> `AreaPage`, so the worker's main screen rendered left-to-right.
+>
+> Fixed in two places. Each wrapper in `src/components/ui/` pins `dir="rtl"` on
+> its Radix root, applied _after_ the prop spread and with `dir` omitted from
+> the props type — a call site cannot open an LTR mode, because there isn't one.
+> `main.tsx` also mounts a `DirectionProvider dir="rtl"` so the next
+> direction-aware primitive someone adds resolves to `rtl` by default rather
+> than having to remember. **Add a Radix primitive that takes `dir`, pin it and
+> extend `direction.test.tsx`** — the tests render with no provider on purpose,
+> which is what a unit test and a portal actually see.
+
 ---
 
 ## 2. Every user-visible string comes from `src/lib/copy.ts`
@@ -158,6 +180,36 @@ never its class strings.
 
 Dark mode uses `--brand-400` / `--brand-300`, not `--brand-600`: `#3B5BDB` on
 `#0F172A` is ~2.7:1 and fails AA.
+
+---
+
+## 5a. The shell does not scroll, and does not zoom
+
+`AppShell` is exactly one viewport tall (`h-dvh`) and clips. **`<main>` is the
+only scroll container in the app.** The header, the offline banner and the admin
+bottom bar are `shrink-0` rows of a frame that never moves — the bar is not
+_stuck_ to the bottom, it _is_ the bottom.
+
+The bar used to be `sticky bottom-0`. That measures correctly on desktop, but
+sticky is anchored to the document's own scroll, which is the one thing a phone
+does not keep still: iOS and Android resize the visual viewport as their
+toolbars collapse mid-scroll, and a `100dvh` flex column re-lays-out under the
+bar while the finger is still moving. Do not reintroduce `sticky` or `fixed`
+here; both compensate for a scroll the shell no longer has.
+
+**Owning the scroller means owning the scroll reset.** The browser resets the
+_document's_ scroll on navigation and knows nothing about ours, so `AppShell`
+zeroes `main.scrollTop` in a layout effect keyed on `pathname`. Assign the
+property, never call `scrollTo` — the jump must be instant, and jsdom
+implements `scrollTop` but not `Element.prototype.scrollTo`, so the method call
+throws in every test that renders the shell.
+
+**Zoom is off**, in three places, because no one of them is enough: the viewport
+meta (`user-scalable=no`), `touch-action: pan-x pan-y` on `<html>` (not
+`manipulation` — that leaves pinch working), and `src/lib/no-zoom.ts` for iOS
+Safari in a tab, which ignores the first and puts pinch out of reach of the
+second. This knowingly fails WCAG 1.4.4; the mitigation is that nothing needs
+zooming to be legible — see the note in that file before changing it.
 
 ---
 

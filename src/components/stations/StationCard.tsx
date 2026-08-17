@@ -6,10 +6,12 @@ import {
   Mail,
   MoreVertical,
   Navigation,
+  Newspaper,
   Package,
   Pencil,
   StickyNote,
   Undo2,
+  type LucideIcon,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { actions, fields, labels, states } from '@/lib/copy';
+import { cn } from '@/lib/utils';
 import type { Station } from '@/hooks/useStations';
 
 interface StationCardProps {
@@ -47,9 +50,22 @@ export function StationCard({
   onEdit,
 }: StationCardProps) {
   const hasLocation = station.latitude !== null && station.longitude !== null;
+  const isSuper = station.fuel_type === 'super';
 
   return (
-    <article className="bg-surface border-border shadow-card flex flex-col gap-3 rounded-lg border p-4">
+    <article
+      className={cn(
+        'bg-surface border-border shadow-card flex flex-col gap-3 rounded-lg border p-4',
+        // Delivering רגיל to a סופר station is a wasted drive back. The fuel
+        // type therefore gets a whole-card cue, not just a chip: a thick
+        // inline-start edge that survives a thumb-flick down the list, when
+        // the chip itself is moving too fast to read.
+        //
+        // `border-s-*` (logical), so it lands on the right-hand edge under
+        // dir="rtl" — the edge the eye starts from.
+        isSuper && 'border-s-danger border-s-4',
+      )}
+    >
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -58,20 +74,21 @@ export function StationCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Fuel type: regular is neutral, super is a subtle danger badge. */}
-            <Badge variant={station.fuel_type === 'super' ? 'danger' : 'neutral'}>
-              <Fuel className="size-4" aria-hidden />
-              {station.fuel_type === 'super' ? fields.fuelSuper : fields.fuelRegular}
-            </Badge>
+            {/*
+              Fuel type stays a badge — it is a category, not a quantity — but
+              the two states are deliberately NOT symmetrical. `רגיל` is the
+              default and reads as a quiet annotation; `סופר` is the exception
+              that costs a return trip if it is missed, so it takes the large
+              size and the danger tint. The asymmetry is the signal: a worker
+              scanning the list is looking for the one that stands out, not
+              reading each label in turn.
 
-            {/* Quantity is highlighted only when there is more than one. */}
-            <Badge variant={station.total > 1 ? 'warning' : 'neutral'}>
-              <Package className="size-4" aria-hidden />
-              {fields.total} {station.total}
-            </Badge>
-
-            <Badge variant="neutral">
-              {fields.flyers} {station.flyers}
+              Both states keep a label AND an icon, so the distinction never
+              rests on the colour (§6.2).
+            */}
+            <Badge variant={isSuper ? 'danger' : 'neutral'} size={isSuper ? 'lg' : 'sm'}>
+              <Fuel className={isSuper ? 'size-5' : 'size-4'} aria-hidden />
+              {isSuper ? fields.fuelSuper : fields.fuelRegular}
             </Badge>
           </div>
 
@@ -133,6 +150,25 @@ export function StationCard({
         ) : null}
       </header>
 
+      {/*
+        The two numbers the worker actually acts on at the pump, promoted out of
+        the 13px badge row into the card's hero figures. Read at arm's length,
+        one-handed, in sunlight — so the value carries the type weight and the
+        word is the caption under it, not the other way round.
+      */}
+      <dl className="flex items-stretch gap-3">
+        <Quantity
+          icon={Package}
+          label={fields.total}
+          value={station.total}
+          // Highlighted only when there is more than one to drop off, which is
+          // the case worth noticing. Never colour alone — the icon and the
+          // label are there in both states.
+          emphasis={station.total > 1}
+        />
+        <Quantity icon={Newspaper} label={fields.flyers} value={station.flyers} />
+      </dl>
+
       {station.is_done ? (
         <Button variant="outline" size="wide" onClick={onUncomplete}>
           <Undo2 className="size-5 rtl:-scale-x-100" aria-hidden />
@@ -160,5 +196,47 @@ export function StationCard({
         </div>
       )}
     </article>
+  );
+}
+
+/**
+ * One hero figure: a captioned number, sized to be read at a glance.
+ *
+ * `dt` before `dd` in the DOM so the term precedes its definition for a screen
+ * reader; `flex-col-reverse` puts the number on top visually without reordering
+ * the markup. `tabular-nums` keeps a two-digit value from jittering the block
+ * width as a round progresses.
+ */
+function Quantity({
+  icon: Icon,
+  label,
+  value,
+  emphasis = false,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  emphasis?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'flex flex-1 flex-col-reverse items-center gap-1 rounded-md border px-3 py-2',
+        emphasis ? 'border-warning bg-warning-bg' : 'border-border bg-surface-alt',
+      )}
+    >
+      <dt
+        className={cn(
+          'text-caption flex items-center gap-1',
+          emphasis ? 'text-warning' : 'text-text-muted',
+        )}
+      >
+        <Icon className="size-4" aria-hidden />
+        {label}
+      </dt>
+      <dd className={cn('text-h1 tabular-nums', emphasis ? 'text-warning' : 'text-text')}>
+        {value}
+      </dd>
+    </div>
   );
 }
