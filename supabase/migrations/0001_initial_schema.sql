@@ -230,6 +230,14 @@ create index if not exists profiles_authorized_idx on public.profiles (is_author
 create index if not exists completions_station_idx on public.station_completions (station_id, created_at desc);
 create index if not exists completions_round_user_idx on public.station_completions (round_id, user_id);
 
+-- Foreign keys with no covering index. Postgres does not create these
+-- automatically, and without them a delete on the referenced side has to
+-- sequential-scan the referencing table to enforce the constraint.
+-- completions_round_user_idx leads with round_id, so it cannot serve a lookup
+-- by user_id alone.
+create index if not exists rounds_started_by_idx on public.rounds (started_by);
+create index if not exists completions_user_idx on public.station_completions (user_id);
+
 
 -- =============================================================================
 -- 4. TRIGGERS
@@ -239,6 +247,7 @@ create index if not exists completions_round_user_idx on public.station_completi
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   new.updated_at = now();
@@ -298,6 +307,7 @@ create trigger on_auth_user_created
 create or replace function public.parse_waze_coordinates()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 declare
   m text[];
@@ -450,17 +460,21 @@ alter table public.station_completions enable row level security;
 
 -- 6.1 profiles ---------------------------------------------------------------
 drop policy if exists profiles_select_self on public.profiles;
+-- `(select auth.uid())` rather than a bare `auth.uid()` throughout this section:
+-- the bare call is re-evaluated once PER ROW, while the subquery form is hoisted
+-- into an InitPlan and evaluated once for the whole statement. Semantics are
+-- identical; on a large scan the difference is order-of-magnitude.
 create policy profiles_select_self on public.profiles
   for select to authenticated
-  using (id = auth.uid() or public.is_admin());
+  using (id = (select auth.uid()) or public.is_admin());
 
 -- Row scope for self-service edits. WHICH COLUMNS may be written is decided by
 -- the column grants in section 5b, not here.
 drop policy if exists profiles_update_self on public.profiles;
 create policy profiles_update_self on public.profiles
   for update to authenticated
-  using (id = auth.uid())
-  with check (id = auth.uid());
+  using (id = (select auth.uid()))
+  with check (id = (select auth.uid()));
 
 -- Admins may read every profile and delete profiles. Changing privilege flags
 -- and area assignments goes through admin_set_user_flags() /
@@ -489,7 +503,7 @@ create policy areas_admin_write on public.areas
 drop policy if exists user_areas_select on public.user_areas;
 create policy user_areas_select on public.user_areas
   for select to authenticated
-  using (user_id = auth.uid() or public.is_admin());
+  using (user_id = (select auth.uid()) or public.is_admin());
 
 drop policy if exists user_areas_admin_write on public.user_areas;
 create policy user_areas_admin_write on public.user_areas
@@ -534,7 +548,7 @@ create policy completions_select on public.station_completions
   for select to authenticated
   using (
     public.is_admin()
-    or user_id = auth.uid()
+    or user_id = (select auth.uid())
   );
 
 -- inserts happen only through SECURITY DEFINER RPCs; no INSERT policy on purpose.
@@ -818,6 +832,16 @@ grant execute on function public.is_admin()             to authenticated;
 grant execute on function public.is_authorized()        to authenticated;
 grant execute on function public.can_access_area(uuid)  to authenticated;
 grant execute on function public.current_round_id()     to authenticated;
+
+-- The three trigger functions are reachable at /rest/v1/rpc/<name> as well, and
+-- handle_new_user() is SECURITY DEFINER. PostgreSQL does refuse to execute a
+-- `returns trigger` function outside trigger context, so this is defence in
+-- depth rather than a live hole — but leaving a definer function world-callable
+-- contradicts the posture of the rest of this section. No role needs EXECUTE:
+-- triggers run as the table owner regardless of the caller's privileges.
+revoke all on function public.handle_new_user()        from public, anon, authenticated;
+revoke all on function public.set_updated_at()         from public, anon, authenticated;
+revoke all on function public.parse_waze_coordinates() from public, anon, authenticated;
 
 
 -- =============================================================================

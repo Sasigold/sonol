@@ -27,11 +27,34 @@ const PHYSICAL_UTILITIES = String.raw`(^|[\s'"\x60])-?(m[lr]|p[lr]|space-x|divid
 const RTL_MESSAGE =
   'RTL: physical utility detected. Use logical properties (ms-/me-/ps-/pe-/start-/end-/border-s/border-e/rounded-s/rounded-e/text-start/text-end) and gap-* instead of space-x-*/divide-x-*.';
 
+/**
+ * Copy discipline (brief §3, rule 3).
+ *
+ * Every user-visible string comes from src/lib/copy.ts — no literal in JSX,
+ * ever. Without a rule that is only a convention, and phase 1 shipped a page
+ * that broke it. The Hebrew block is U+0590–U+05FF; matching on script rather
+ * than on a word list catches every new string automatically.
+ *
+ * Only JSX nodes are matched, so copy.ts's own plain string literals and the
+ * Hebrew inside test assertions are unaffected.
+ */
+const HEBREW = String.raw`[֐-׿]`;
+
+const COPY_MESSAGE =
+  'Hebrew literal in JSX. Every user-visible string belongs in src/lib/copy.ts — import it instead.';
+
 const rtlRules = {
   'no-restricted-syntax': [
     'error',
     { selector: `Literal[value=/${PHYSICAL_UTILITIES}/]`, message: RTL_MESSAGE },
     { selector: `TemplateElement[value.raw=/${PHYSICAL_UTILITIES}/]`, message: RTL_MESSAGE },
+    { selector: `JSXText[value=/${HEBREW}/]`, message: COPY_MESSAGE },
+    { selector: `JSXAttribute Literal[value=/${HEBREW}/]`, message: COPY_MESSAGE },
+    { selector: `JSXExpressionContainer > Literal[value=/${HEBREW}/]`, message: COPY_MESSAGE },
+    {
+      selector: `JSXExpressionContainer TemplateElement[value.raw=/${HEBREW}/]`,
+      message: COPY_MESSAGE,
+    },
   ],
 };
 
@@ -80,13 +103,28 @@ export default tseslint.config(
     },
   },
 
-  // Tests may use non-null assertions on fixtures.
+  // Tests may use non-null assertions on fixtures, and Hebrew literals as
+  // fixture data — a test is not user-facing UI, so the copy rule does not
+  // apply. The RTL rules still do.
   {
-    files: ['src/**/*.{test,spec}.{ts,tsx}', 'src/test/**/*.ts'],
+    files: ['src/**/*.{test,spec}.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
+      'no-restricted-syntax': [
+        'error',
+        { selector: `Literal[value=/${PHYSICAL_UTILITIES}/]`, message: RTL_MESSAGE },
+        { selector: `TemplateElement[value.raw=/${PHYSICAL_UTILITIES}/]`, message: RTL_MESSAGE },
+      ],
     },
+  },
+
+  // UI primitives and the router intentionally export variants, sub-components
+  // and the router object alongside components. Fast Refresh granularity is not
+  // worth splitting a 20-line primitive across three files.
+  {
+    files: ['src/components/ui/**/*.tsx', 'src/router.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
   },
 
   // Node-side config files — not type-checked against the app project.

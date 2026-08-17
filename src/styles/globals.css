@@ -150,6 +150,7 @@
   --color-popover: var(--surface);
   --color-popover-foreground: var(--text);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-fg);
   --color-secondary: var(--surface-alt);
   --color-secondary-foreground: var(--text);
@@ -310,12 +311,18 @@
     outline-offset: 2px;
   }
 
-  /* Latin runs (emails, coordinates, IDs) inside Hebrew text reorder badly
-     without an explicit isolate. Use <bdi> or .ltr-isolate — see CLAUDE.md. */
+  /* Latin runs (emails, coordinates, UUIDs, station numbers) inside Hebrew text
+     reorder badly without an explicit isolate.
+
+     INLINE USE ONLY. This governs bidi ordering, never alignment — deliberately
+     no `text-align`. An earlier version set `text-align: start`, which under the
+     element's own `direction: ltr` resolves to LEFT; on a block element that
+     stranded the text at the left margin of an RTL page. Put the class (or a
+     <bdi>) on an inline element inside a normally-aligned block, so the block
+     stays right-aligned and only the Latin run inside it reads left-to-right. */
   .ltr-isolate {
     direction: ltr;
     unicode-bidi: isolate;
-    text-align: start;
   }
 
   @media (prefers-reduced-motion: reduce) {

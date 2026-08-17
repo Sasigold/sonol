@@ -41,18 +41,28 @@ function* walk(path) {
 
 let failures = 0;
 
+/**
+ * Strip comments before matching.
+ *
+ * Comments must be skipped so the banned utilities can be *documented* — and
+ * that means tracking `/* … *\/` and `<!-- … -->` across lines, not just
+ * spotting an opening marker at the start of one. A continuation line of a
+ * block comment carries no marker of its own.
+ */
+function stripComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (match) => match.replace(/[^\n]/g, ' '))
+    .replace(/<!--[\s\S]*?-->/g, (match) => match.replace(/[^\n]/g, ' '))
+    .replace(/^\s*\/\/.*$/gm, '');
+}
+
 for (const root of ROOTS) {
   for (const file of walk(root)) {
-    const lines = readFileSync(file, 'utf8').split('\n');
+    const lines = stripComments(readFileSync(file, 'utf8')).split('\n');
     lines.forEach((line, index) => {
-      // Skip comment lines so we can *document* the banned utilities.
-      const trimmed = line.trim();
-      if (trimmed.startsWith('*') || trimmed.startsWith('/*') || trimmed.startsWith('//')) return;
-      if (trimmed.startsWith('<!--')) return;
-
       for (const [pattern, hint] of PATTERNS) {
         if (pattern.test(line)) {
-          console.error(`${file}:${index + 1}  ${trimmed}\n    -> RTL: ${hint}`);
+          console.error(`${file}:${index + 1}  ${line.trim()}\n    -> RTL: ${hint}`);
           failures += 1;
           break;
         }

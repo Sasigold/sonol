@@ -46,6 +46,14 @@ export const fields = {
   total: 'כמות',
   flyers: 'פליירים',
   wazeLink: 'קישור ניווט',
+  /**
+   * Added strings, not in §9.
+   * §8.1 mandates a show/hide toggle on the password field but supplies no
+   * accessible label, and an icon-only button without one is unusable on a
+   * screen reader.
+   */
+  showPassword: 'הצג סיסמה',
+  hidePassword: 'הסתר סיסמה',
 } as const;
 
 /* 9.3 Actions ---------------------------------------------------------------- */
@@ -175,6 +183,11 @@ export const states = {
     title: 'אירעה שגיאה בטעינת הנתונים',
     retry: 'נסה שוב',
   },
+  /**
+   * Added string, not in §9. A skeleton is silent to a screen reader — it needs
+   * an accessible name announcing that content is on its way.
+   */
+  loading: 'טוען…',
   noStationLocation: 'לא הוגדר מיקום לתחנה זו',
 } as const;
 
@@ -198,6 +211,14 @@ export const offline = {
   noConnection: 'אין חיבור לאינטרנט',
   pendingOperations: (n: number) => `${n} פעולות ממתינות לסנכרון`,
   synced: 'הנתונים סונכרנו',
+} as const;
+
+/* Forgot password (§8.2) ------------------------------------------------------
+   §8.2 calls for an "explanatory paragraph" but never supplies its text, so
+   this one is authored. */
+export const forgotPassword = {
+  intro: 'הזן את כתובת האימייל שאיתה נרשמת, ונשלח אליך קישור לאיפוס הסיסמה.',
+  sent: 'אם הכתובת קיימת במערכת, נשלח אליה קישור לאיפוס הסיסמה. בדוק גם בתיקיית הספאם.',
 } as const;
 
 /* Blocked screen (§8.3) ------------------------------------------------------ */
@@ -228,6 +249,7 @@ export const copy = {
   states,
   toasts,
   offline,
+  forgotPassword,
   blocked,
   app,
 } as const;
