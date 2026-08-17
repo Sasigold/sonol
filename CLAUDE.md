@@ -43,6 +43,28 @@ block element, `direction: ltr` makes `text-align: start` resolve to _left_ and
 strands the block at the left margin of an RTL page. Put it on an inline span
 inside a normally-aligned block.
 
+> **Radix does not read `dir` off the document.** It resolves direction from a
+> `DirectionProvider` context and falls back to **`'ltr'`** when there is none —
+> then writes that fallback out as a real `dir` attribute on the element. An
+> attribute beats the `dir="rtl"` on `<html>`, and portalled content (menus,
+> listboxes) is not even a descendant of the app tree it would inherit from.
+>
+> Left unset it broke three things at once: `DropdownMenu` (icons on the wrong
+> side of their labels, and the menu anchored to the wrong edge — floating-ui
+> reads the computed direction of the element it is positioning), `Select` (the
+> stamp lands on the trigger too, so the chevron and the value swapped sides),
+> and `Tabs` — the widest, because the Tabs root wraps the whole station list in
+> `AreaPage`, so the worker's main screen rendered left-to-right.
+>
+> Fixed in two places. Each wrapper in `src/components/ui/` pins `dir="rtl"` on
+> its Radix root, applied _after_ the prop spread and with `dir` omitted from
+> the props type — a call site cannot open an LTR mode, because there isn't one.
+> `main.tsx` also mounts a `DirectionProvider dir="rtl"` so the next
+> direction-aware primitive someone adds resolves to `rtl` by default rather
+> than having to remember. **Add a Radix primitive that takes `dir`, pin it and
+> extend `direction.test.tsx`** — the tests render with no provider on purpose,
+> which is what a unit test and a portal actually see.
+
 ---
 
 ## 2. Every user-visible string comes from `src/lib/copy.ts`

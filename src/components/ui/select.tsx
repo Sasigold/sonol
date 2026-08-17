@@ -3,7 +3,18 @@ import { Check, ChevronDown } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
-export const Select = SelectPrimitive.Root;
+/**
+ * Direction is PINNED here — see the note on `DropdownMenu`.
+ *
+ * Select is the worse of the two: Radix stamps its resolved direction onto the
+ * TRIGGER as well as the portalled content. Left at the `'ltr'` fallback, the
+ * trigger's `justify-between` put the chevron on the right and the Hebrew area
+ * name on the left, inside a form that is otherwise right-aligned.
+ */
+export function Select(props: Omit<ComponentProps<typeof SelectPrimitive.Root>, 'dir'>) {
+  return <SelectPrimitive.Root {...props} dir="rtl" />;
+}
+
 export const SelectValue = SelectPrimitive.Value;
 
 export function SelectTrigger({

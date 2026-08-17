@@ -2,7 +2,26 @@ import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
-export const DropdownMenu = DropdownMenuPrimitive.Root;
+/**
+ * Direction is PINNED here, not inherited from the document.
+ *
+ * Radix resolves direction from a `DirectionProvider` and silently falls back
+ * to `'ltr'` when there is none — then writes it out as a real `dir` attribute
+ * on the menu content. The content is portalled to `<body>`, so that attribute
+ * overrides the `dir="rtl"` on `<html>` instead of inheriting it: a Hebrew menu
+ * laid out left-to-right, with each item's icon on the wrong side of its label.
+ * `align="end"` was measured from the wrong edge too — floating-ui reads the
+ * computed direction of the element it is positioning, which was the `ltr` one.
+ *
+ * `dir` is omitted from the props type on purpose, and applied after the
+ * spread. This app has no LTR mode; a call site must not be able to open one.
+ */
+export function DropdownMenu(
+  props: Omit<ComponentProps<typeof DropdownMenuPrimitive.Root>, 'dir'>,
+) {
+  return <DropdownMenuPrimitive.Root {...props} dir="rtl" />;
+}
+
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
 export function DropdownMenuContent({
