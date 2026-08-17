@@ -50,9 +50,22 @@ export function StationCard({
   onEdit,
 }: StationCardProps) {
   const hasLocation = station.latitude !== null && station.longitude !== null;
+  const isSuper = station.fuel_type === 'super';
 
   return (
-    <article className="bg-surface border-border shadow-card flex flex-col gap-3 rounded-lg border p-4">
+    <article
+      className={cn(
+        'bg-surface border-border shadow-card flex flex-col gap-3 rounded-lg border p-4',
+        // Delivering רגיל to a סופר station is a wasted drive back. The fuel
+        // type therefore gets a whole-card cue, not just a chip: a thick
+        // inline-start edge that survives a thumb-flick down the list, when
+        // the chip itself is moving too fast to read.
+        //
+        // `border-s-*` (logical), so it lands on the right-hand edge under
+        // dir="rtl" — the edge the eye starts from.
+        isSuper && 'border-s-danger border-s-4',
+      )}
+    >
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -61,11 +74,21 @@ export function StationCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Fuel type: regular is neutral, super is a subtle danger badge.
-                It stays a badge — it is a category, not a quantity. */}
-            <Badge variant={station.fuel_type === 'super' ? 'danger' : 'neutral'}>
-              <Fuel className="size-4" aria-hidden />
-              {station.fuel_type === 'super' ? fields.fuelSuper : fields.fuelRegular}
+            {/*
+              Fuel type stays a badge — it is a category, not a quantity — but
+              the two states are deliberately NOT symmetrical. `רגיל` is the
+              default and reads as a quiet annotation; `סופר` is the exception
+              that costs a return trip if it is missed, so it takes the large
+              size and the danger tint. The asymmetry is the signal: a worker
+              scanning the list is looking for the one that stands out, not
+              reading each label in turn.
+
+              Both states keep a label AND an icon, so the distinction never
+              rests on the colour (§6.2).
+            */}
+            <Badge variant={isSuper ? 'danger' : 'neutral'} size={isSuper ? 'lg' : 'sm'}>
+              <Fuel className={isSuper ? 'size-5' : 'size-4'} aria-hidden />
+              {isSuper ? fields.fuelSuper : fields.fuelRegular}
             </Badge>
           </div>
 
