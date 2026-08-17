@@ -51,6 +51,30 @@ export function useStation(id: string | undefined) {
   });
 }
 
+/**
+ * Filter an area's stations by name or station number.
+ *
+ * An area can hold forty stations, and the person scrolling them is holding a
+ * phone one-handed in a vehicle. Matching is done here rather than in a query:
+ * the whole area is already loaded in one request, so a round trip per
+ * keystroke would cost a worker on a bad connection everything and gain
+ * nothing.
+ *
+ * The number is matched as a prefix — typing `12` finds 12 and 12.5 — and the
+ * trailing `.00` PostgREST returns for `numeric` is dropped so `12` matches a
+ * station stored as `12.00`.
+ */
+export function filterStations(stations: Station[], term: string): Station[] {
+  const needle = term.trim().toLowerCase();
+  if (needle.length === 0) return stations;
+
+  return stations.filter((station) => {
+    if (station.name.toLowerCase().includes(needle)) return true;
+    // `String(12.5)` is "12.5" and `String(12)` is "12" — no formatting needed.
+    return String(station.sort_number).startsWith(needle);
+  });
+}
+
 /** Split into the two tabs. `sort_number` ascending, flipped by the toggle. */
 export function splitStations(stations: Station[], descending: boolean) {
   const notDone = stations

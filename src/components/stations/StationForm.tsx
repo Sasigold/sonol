@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, Loader2, MapPin, Trash2 } from 'lucide-react';
@@ -14,11 +14,12 @@ import {
 } from '@/components/ui/select';
 import { QuantityStepper } from '@/components/common/QuantityStepper';
 import { stationSchema, type StationValues } from '@/lib/schemas';
+import { positionAfter } from '@/lib/ordering';
 import { formatCoordinates, parseWazeLink } from '@/lib/waze';
-import { actions, fields, validation } from '@/lib/copy';
+import { actions, fields, labels, stations as stationsCopy, validation } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 import type { Area } from '@/hooks/useAreas';
-import type { Station } from '@/hooks/useStations';
+import { useAreaStations, type Station } from '@/hooks/useStations';
 import { useStationNumberTaken } from '@/hooks/useStationMutations';
 
 interface StationFormProps {
@@ -79,6 +80,7 @@ export function StationForm({
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isValid },
   } = useForm<StationValues>({
     resolver: zodResolver(stationSchema),
@@ -117,6 +119,44 @@ export function StationForm({
     station?.id,
   );
 
+  /**
+   * The position helper.
+   *
+   * `sort_number` is `numeric(10,2)` precisely so a station can be slotted
+   * between 12 and 13 as 12.5 — a design the form never exposed, leaving the
+   * admin to work out the decimal themselves. Picking a neighbour computes it.
+   *
+   * The number field stays editable beside this: the helper is a shortcut, not
+   * a replacement, and the (area, number) uniqueness check still guards both.
+   */
+  const { data: areaStations = [] } = useAreaStations(
+    watchedArea.length > 0 ? watchedArea : undefined,
+  );
+  const siblings = useMemo(
+    () => areaStations.filter((candidate) => candidate.id !== station?.id),
+    [areaStations, station?.id],
+  );
+
+  /*
+   * Transient: it drives no submitted value, it only writes into sort_number.
+   *
+   * The chosen area is stored ALONGSIDE the choice and the selection derived
+   * from the pair, so switching area clears a neighbour that no longer exists
+   * without an effect that calls setState — which cascades a render, and which
+   * the lint rules reject outright.
+   */
+  const [position, setPosition] = useState({ areaId: '', value: '' });
+  const positionValue = position.areaId === watchedArea ? position.value : '';
+
+  function applyPosition(value: string) {
+    setPosition({ areaId: watchedArea, value });
+    const afterId = value === 'first' ? null : value.replace(/^after:/, '');
+    setValue('sort_number', positionAfter(siblings, afterId), {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  }
+
   const blocked = !isValid || linkInvalid || numberTaken;
 
   return (
@@ -149,6 +189,26 @@ export function StationForm({
           {...register('sort_number', { valueAsNumber: true })}
         />
       </Field>
+
+      {/* Only worth showing once the area has something to sit between. */}
+      {siblings.length > 0 ? (
+        <Field id="position" label={fields.position}>
+          <Select value={positionValue} onValueChange={applyPosition}>
+            <SelectTrigger id="position">
+              <SelectValue placeholder={fields.positionPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="first">{labels.positionFirst}</SelectItem>
+              {siblings.map((sibling) => (
+                <SelectItem key={sibling.id} value={`after:${sibling.id}`}>
+                  {labels.positionAfter(sibling.name)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-caption text-text-muted">{stationsCopy.positionHint}</p>
+        </Field>
+      ) : null}
 
       <Field id="area_id" label={fields.area} error={errors.area_id?.message}>
         <Controller

@@ -140,6 +140,25 @@ export function useCreateUser() {
   });
 }
 
+/**
+ * Set another user's password, for a worker who cannot reach their inbox.
+ *
+ * Nothing is invalidated on success: a password is not part of any query's
+ * data, and the user's own session elsewhere is ended by Supabase, not by us.
+ */
+export function useResetUserPassword() {
+  return useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const response = await supabase.functions.invoke<{ error?: string }>('admin-reset-password', {
+        body: { user_id: userId, password },
+      });
+      if (response.error) throw response.error;
+      const message = response.data?.error;
+      if (typeof message === 'string') throw new Error(message);
+    },
+  });
+}
+
 export function useDeleteUser() {
   const queryClient = useQueryClient();
 

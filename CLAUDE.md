@@ -91,11 +91,18 @@ those columns directly — it cannot, the grants forbid it.
 | `reset_round`                                   | admin            |
 | `admin_set_user_flags` / `admin_set_user_areas` | admin            |
 
-Read aggregates from the views (`my_areas`, `area_stats`, `global_stats`,
-`user_stats`) — one query each. Never sum on the client, and never open more
-than one realtime channel per screen.
+Stations and areas are written **directly**, not through an RPC: the
+`*_admin_write` policies already refuse a non-admin, and neither write has a
+cross-table invariant to keep. The table above is for operations that are
+privileged (privilege flags) or must be atomic across tables (completion,
+reset) — do not migrate ordinary admin CRUD into it.
 
-User creation and deletion run in Edge Functions with the service-role key.
+Read aggregates from the views (`my_areas`, `area_stats`, `global_stats`,
+`user_stats`, `round_stats`, `round_user_stats`) — one query each. Never sum on
+the client, and never open more than one realtime channel per screen.
+
+User creation, deletion and password reset run in Edge Functions with the
+service-role key.
 Creating a user from the browser replaces the admin's own session — that was a
 defect in the original app.
 
@@ -108,8 +115,14 @@ defect in the original app.
 
 ## 4. Database
 
-`supabase/migrations/0001_initial_schema.sql` is authoritative. It is excluded
-from Prettier (`.prettierignore`) — do not let an editor reformat it.
+`supabase/migrations/0001_initial_schema.sql` is authoritative for the tables,
+policies and RPCs; later numbered files add to it. `0002_round_history.sql` is
+the read side of `rounds` / `station_completions`. Migrations are excluded from
+Prettier (`.prettierignore`) — do not let an editor reformat them.
+
+**Never edit an applied migration — add the next numbered file.** The schema in
+the repository must be reproducible by running them in order on an empty
+project.
 
 **The one deliberate change from the supplied schema:** `revoke all ... from
 anon, authenticated` before each set of grants. Supabase ships
