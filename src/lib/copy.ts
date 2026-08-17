@@ -78,6 +78,13 @@ export const actions = {
   exportCsv: 'ייצוא ל-CSV',
   backToSignIn: 'חזרה למסך ההתחברות',
   sendResetLink: 'שלח לינק לאיפוס הסיסמה',
+  /**
+   * Added strings, not in §9 — icon-only controls the brief specifies but does
+   * not name, and an icon-only button without a label is unusable on a screen
+   * reader.
+   */
+  toggleSort: 'הפוך סדר מיון',
+  openMenu: 'פתח תפריט',
 } as const;
 
 /* 9.4 Status & labels -------------------------------------------------------- */

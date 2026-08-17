@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button';
 import { states } from '@/lib/copy';
 
 interface ErrorStateProps {
-  title?: string;
-  description?: string;
-  onRetry?: () => void;
+  title?: string | undefined;
+  description?: string | undefined;
+  onRetry?: (() => void) | undefined;
 }
 
 /**

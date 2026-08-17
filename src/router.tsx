@@ -8,6 +8,7 @@ import { SignInPage } from '@/pages/signin/SignInPage';
 import { ForgotPasswordPage } from '@/pages/forgot-password/ForgotPasswordPage';
 import { BlockedPage } from '@/pages/blocked/BlockedPage';
 import { HomePage } from '@/pages/home/HomePage';
+import { AreaPage } from '@/pages/area/AreaPage';
 import { NotFoundPage } from '@/pages/not-found/NotFoundPage';
 import { PlaceholderPage } from '@/pages/placeholder/PlaceholderPage';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -49,6 +50,9 @@ export const router = createBrowserRouter([
             element: <AppShell />,
             children: [
               { path: '/', element: <HomePage /> },
+              // RLS decides which areas are actually readable; a worker who
+              // guesses another area's id gets an empty result, not a leak.
+              { path: '/areas/:areaId', element: <AreaPage /> },
 
               // Admin only. Placeholders until phases 4-5.
               {
