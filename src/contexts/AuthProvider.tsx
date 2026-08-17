@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { toHebrewError } from '@/lib/errors';
+import { offlineQueue } from '@/lib/offline-queue';
+import { SUPABASE_CACHE_NAME } from '@/lib/cache-names';
 import { AuthContext, type AuthState, type Profile } from './auth-context';
 
 const PROFILE_COLUMNS = 'id, email, display_name, is_admin, is_authorized, completed_count';
@@ -17,6 +19,35 @@ async function fetchProfile(userId: string): Promise<Profile> {
   // non-null assertion is needed — and none is permitted (ESLint).
   if (error) throw error;
   return data;
+}
+
+/**
+ * Everything belonging to the signed-in user that outlives the session.
+ *
+ * Two devices' worth of reasoning, both about a tablet shared between workers:
+ *
+ * 1. A queued station toggle is credited to whoever is signed in when it
+ *    replays. Left in place it would put one worker's round on the next one's
+ *    counter.
+ * 2. The service worker's REST cache keys on the URL and ignores the
+ *    `Authorization` header, so the same `/rest/v1/...` request made by the
+ *    next user can be answered from the previous user's cached rows. RLS
+ *    cannot help — the response never reaches the server.
+ *
+ * Best-effort by design: a failure here must not trap someone in a session
+ * they asked to leave.
+ */
+async function purgeUserData(): Promise<void> {
+  try {
+    await offlineQueue.clear();
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (typeof caches !== 'undefined') await caches.delete(SUPABASE_CACHE_NAME);
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -86,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // that navigated without ending the session — this ends it for real.
     ++requestId.current;
     setState({ status: 'signedOut' });
+    await purgeUserData();
     await supabase.auth.signOut();
   }, []);
 

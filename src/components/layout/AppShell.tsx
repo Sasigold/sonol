@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { LogOut, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { OfflineBanner } from '@/components/common/OfflineBanner';
 import { RoleBadge } from '@/components/users/RoleBadge';
 import { BottomNav } from './BottomNav';
 import { useAuth } from '@/contexts/auth-context';
@@ -70,6 +71,8 @@ export function AppShell() {
           </div>
         </div>
       </header>
+
+      <OfflineBanner />
 
       <main className="mx-auto w-full max-w-3xl grow p-4">
         <Outlet />

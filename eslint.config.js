@@ -134,5 +134,34 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
 
+  /*
+   * Playwright specs.
+   *
+   * They need their own block: `e2e/**` sits outside the `src/**` glob above,
+   * so without this ESLint parses it with no config at all. Type-aware linting
+   * is on (they are covered by tsconfig.node.json), but the copy rule is not —
+   * a spec asserts on Hebrew text, which is the whole point of it.
+   */
+  {
+    files: ['e2e/**/*.ts'],
+    extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+      'no-restricted-syntax': [
+        'error',
+        { selector: `Literal[value=/${PHYSICAL_UTILITIES}/]`, message: RTL_MESSAGE },
+        { selector: `TemplateElement[value.raw=/${PHYSICAL_UTILITIES}/]`, message: RTL_MESSAGE },
+      ],
+    },
+  },
+
   prettier,
 );

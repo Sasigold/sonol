@@ -27,7 +27,7 @@ const AUTH_MESSAGE_MAP: readonly (readonly [RegExp, string])[] = [
   [/password.*too short/i, errors.passwordTooShort],
 ];
 
-function isOfflineLike(message: string): boolean {
+export function isOfflineLike(message: string): boolean {
   // supabase-js surfaces a dropped connection as a bare TypeError from fetch;
   // the wording differs per browser, hence the several patterns.
   return (
@@ -84,6 +84,44 @@ export function toHebrewError(error: unknown): string {
   if (/cannot revoke your own admin role/i.test(message)) return errors.permissionDenied;
 
   return errors.generic;
+}
+
+/**
+ * How a failed mutation should be treated by the offline queue.
+ *
+ * - `offline`   the network is gone. The write is still valid; keep it and stop
+ *               draining. Deliberately does NOT count against the retry bound —
+ *               a worker who loses signal five times in an hour must not have
+ *               their round silently discarded for it.
+ * - `permanent` the server will never accept this write, whenever it is
+ *               replayed. Drop it and tell the user, or it retries forever.
+ * - `unknown`   anything else: a 5xx, a timeout, an expired JWT that
+ *               supabase-js may yet refresh. Worth retrying, but bounded.
+ */
+export type MutationErrorKind = 'offline' | 'permanent' | 'unknown';
+
+export function classifyMutationError(error: unknown): MutationErrorKind {
+  const message = hasStringProp(error, 'message') ? error.message : '';
+  if (isOfflineLike(message)) return 'offline';
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline';
+
+  const code = hasStringProp(error, 'code') ? error.code : '';
+  // 42501 is a refused grant, PGRST116 is a row that is no longer there — a
+  // station deleted while the tap sat in the queue. Neither improves with time.
+  // PGRST301 (expired JWT) is deliberately absent: supabase-js refreshes the
+  // token on reconnect, so that one is retryable and lands in `unknown`.
+  if (code === '42501' || code === 'PGRST116') return 'permanent';
+
+  if (
+    /permission denied/i.test(message) ||
+    /row-level security/i.test(message) ||
+    /not allowed to work in this area/i.test(message) ||
+    /admin only/i.test(message)
+  ) {
+    return 'permanent';
+  }
+
+  return 'unknown';
 }
 
 /** Narrowing helpers, so call sites never reach for a non-null assertion. */

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { toHebrewError } from './errors';
+import { classifyMutationError, toHebrewError } from './errors';
 import { errors } from './copy';
 
 /**
@@ -80,5 +80,50 @@ describe('toHebrewError', () => {
   it('reports offline when the browser says so, whatever the error says', () => {
     vi.stubGlobal('navigator', { onLine: false });
     expect(toHebrewError({ message: 'totally unknown' })).toBe(errors.offline);
+  });
+});
+
+/**
+ * The queue acts on this: `permanent` discards a worker's tap, `offline` keeps
+ * it indefinitely. Misclassifying either way loses work or retries for ever.
+ */
+describe('classifyMutationError', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('reads a dropped connection as offline', () => {
+    for (const message of [
+      'Failed to fetch',
+      'NetworkError when attempting to fetch',
+      'Load failed',
+    ]) {
+      expect(classifyMutationError(new TypeError(message))).toBe('offline');
+    }
+  });
+
+  it('reads any failure as offline while the browser is offline', () => {
+    vi.stubGlobal('navigator', { onLine: false });
+    expect(classifyMutationError(new Error('internal server error'))).toBe('offline');
+  });
+
+  it('reads a refused grant or a vanished row as permanent', () => {
+    expect(classifyMutationError({ code: '42501', message: 'permission denied' })).toBe(
+      'permanent',
+    );
+    expect(classifyMutationError({ code: 'PGRST116', message: 'no rows' })).toBe('permanent');
+    expect(classifyMutationError(new Error('not allowed to work in this area'))).toBe('permanent');
+    expect(classifyMutationError(new Error('row-level security policy'))).toBe('permanent');
+  });
+
+  it('treats an expired JWT as retryable, not permanent', () => {
+    // supabase-js refreshes the token on reconnect; discarding the tap here
+    // would lose a station for nothing more than a session boundary.
+    expect(classifyMutationError({ code: 'PGRST301', message: 'JWT expired' })).toBe('unknown');
+  });
+
+  it('treats anything it does not recognise as retryable but bounded', () => {
+    expect(classifyMutationError(new Error('502 Bad Gateway'))).toBe('unknown');
+    expect(classifyMutationError(null)).toBe('unknown');
   });
 });

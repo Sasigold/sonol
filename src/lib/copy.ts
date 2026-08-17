@@ -222,6 +222,15 @@ export const offline = {
   noConnection: 'אין חיבור לאינטרנט',
   pendingOperations: (n: number) => `${n} פעולות ממתינות לסנכרון`,
   synced: 'הנתונים סונכרנו',
+  // Authored: §9.9 has no wording for a queued action the server refused.
+  // Saying nothing would leave the worker believing a station was marked.
+  syncFailed: 'סימון תחנה לא הצליח להסתנכרן ובוטל',
+} as const;
+
+/* New version available (§11) — authored, §9 supplies no wording. */
+export const update = {
+  available: 'גרסה חדשה זמינה',
+  action: 'רענן',
 } as const;
 
 /* Forgot password (§8.2) ------------------------------------------------------
@@ -267,6 +276,7 @@ export const copy = {
   states,
   toasts,
   offline,
+  update,
   forgotPassword,
   blocked,
   app,
