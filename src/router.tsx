@@ -9,6 +9,7 @@ import { ForgotPasswordPage } from '@/pages/forgot-password/ForgotPasswordPage';
 import { BlockedPage } from '@/pages/blocked/BlockedPage';
 import { HomePage } from '@/pages/home/HomePage';
 import { AreaPage } from '@/pages/area/AreaPage';
+import { StationFormPage } from '@/pages/stations/StationFormPage';
 import { NotFoundPage } from '@/pages/not-found/NotFoundPage';
 import { PlaceholderPage } from '@/pages/placeholder/PlaceholderPage';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -62,11 +63,8 @@ export const router = createBrowserRouter([
                   { path: '/users', element: <PlaceholderPage title={nav.users} /> },
                   { path: '/users/new', element: <PlaceholderPage title={nav.newUser} /> },
                   { path: '/users/:id/edit', element: <PlaceholderPage title={nav.editUser} /> },
-                  { path: '/stations/new', element: <PlaceholderPage title={nav.addStation} /> },
-                  {
-                    path: '/stations/:id/edit',
-                    element: <PlaceholderPage title={nav.editStation} />,
-                  },
+                  { path: '/stations/new', element: <StationFormPage mode="create" /> },
+                  { path: '/stations/:id/edit', element: <StationFormPage mode="edit" /> },
                 ],
               },
             ],

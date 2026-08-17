@@ -4,6 +4,7 @@ import { LogOut, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { RoleBadge } from '@/components/users/RoleBadge';
+import { BottomNav } from './BottomNav';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/hooks/useTheme';
 import { actions, app, dialogs, nav } from '@/lib/copy';
@@ -73,6 +74,8 @@ export function AppShell() {
       <main className="mx-auto w-full max-w-3xl grow p-4">
         <Outlet />
       </main>
+
+      {profile?.is_admin ? <BottomNav /> : null}
 
       <ConfirmDialog
         open={confirmOpen}
