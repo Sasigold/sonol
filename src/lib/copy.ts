@@ -78,8 +78,10 @@ export const fields = {
   roundOpen: 'סבב פעיל',
   startedAt: 'התחיל',
   endedAt: 'הסתיים',
-  completions: 'ביצועים',
   stations: 'תחנות',
+  /* The position helper on the station form. */
+  position: 'מיקום בסבב',
+  positionPlaceholder: 'בחר מיקום',
 } as const;
 
 /* 9.3 Actions ---------------------------------------------------------------- */
@@ -154,6 +156,9 @@ export const labels = {
   roundWorkers: (n: number) => `${n} עובדים`,
   searchResults: (n: number) => `${n} תוצאות`,
   stillOpen: 'פעיל',
+  /* The position helper on the station form. */
+  positionFirst: 'ראשונה באזור',
+  positionAfter: (name: string) => `אחרי ${name}`,
 } as const;
 
 /* 9.5 Dialogs ---------------------------------------------------------------- */
@@ -202,6 +207,11 @@ export const dialogs = {
   removePhoto: {
     title: 'הסרת תמונת הפרופיל',
     body: 'התמונה תוסר מהפרופיל שלך.',
+  },
+  resetUserPassword: {
+    title: 'איפוס סיסמה למשתמש',
+    body: (name: string) =>
+      `תיקבע סיסמה חדשה עבור ${name}. הסיסמה הקודמת תפסיק לעבוד מיד, ויש למסור לו את החדשה.`,
   },
 } as const;
 
@@ -310,6 +320,7 @@ export const toasts = {
   areaAdded: 'האזור נוסף',
   areaUpdated: 'האזור עודכן',
   areaDeleted: 'האזור נמחק',
+  userPasswordReset: 'הסיסמה של המשתמש עודכנה',
 } as const;
 
 /* 9.9 Offline ---------------------------------------------------------------- */
@@ -361,6 +372,17 @@ export const areas = {
   orderHint: 'הסדר כאן הוא הסדר שבו האזורים מוצגים לעובדים',
 } as const;
 
+/* Admin user management, beyond what §8.8 covers ------------------------------ */
+export const users = {
+  passwordIntro:
+    'קביעת סיסמה חדשה למשתמש ששכח את שלו ואין לו גישה לאימייל. יש למסור לו אותה באופן אישי, והוא יוכל להחליף אותה במסך הפרופיל.',
+} as const;
+
+/* The station form's position helper (§8.6 has the number field, not this) ---- */
+export const stations = {
+  positionHint: 'בחירת מיקום מחשבת את מספר התחנה. אפשר גם להקליד מספר ידנית.',
+} as const;
+
 /* Round history (§9 has no history screen) ------------------------------------ */
 export const history = {
   intro: 'כל איפוס סוגר סבב ופותח חדש. הנתונים של הסבבים הקודמים נשמרים.',
@@ -407,6 +429,8 @@ export const copy = {
   resetPassword,
   profile,
   areas,
+  users,
+  stations,
   history,
   blocked,
   app,

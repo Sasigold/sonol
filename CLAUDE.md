@@ -79,7 +79,8 @@ Read aggregates from the views (`my_areas`, `area_stats`, `global_stats`,
 `user_stats`, `round_stats`, `round_user_stats`) — one query each. Never sum on
 the client, and never open more than one realtime channel per screen.
 
-User creation and deletion run in Edge Functions with the service-role key.
+User creation, deletion and password reset run in Edge Functions with the
+service-role key.
 Creating a user from the browser replaces the admin's own session — that was a
 defect in the original app.
 
