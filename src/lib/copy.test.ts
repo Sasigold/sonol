@@ -22,6 +22,7 @@ describe('copy', () => {
     expect(copy.labels.durationHours('1:47')).toBe('1:47 שע׳');
     expect(copy.labels.distanceMeters(320)).toBe('320 מ׳');
     expect(copy.labels.distanceKm('1.2')).toBe('1.2 ק״מ');
+    expect(copy.location.mapAccuracy(12)).toBe('דיוק ±12 מ׳');
     expect(copy.pace.anomalyLeg('תחנת רמלה', 'תחנת לוד')).toBe('תחנת רמלה ← תחנת לוד');
   });
 

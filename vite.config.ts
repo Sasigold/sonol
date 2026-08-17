@@ -59,6 +59,12 @@ export default defineConfig({
           // The plugin already precaches the manifest's icons itself; matching
           // them here as well lists each one twice.
           '**/pwa-*.png',
+          // The completion-location map (Leaflet) is admin-only and needs a
+          // network for its tiles anyway, so precaching its ~150 kB chunk onto
+          // every field worker's device buys nothing. It loads on demand when an
+          // admin opens a map.
+          '**/StationMap-*.js',
+          '**/StationMap-*.css',
         ],
 
         // A deep link must resolve to the shell; the app is a browser router.

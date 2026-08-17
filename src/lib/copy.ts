@@ -527,6 +527,18 @@ export const location = {
     title: 'אין ביצועים חריגים במיקום',
     body: 'כל הביצועים עם מיקום נרשמו סמוך לתחנה',
   },
+  /* The map dialog opened from a completed station card (§ F4). */
+  showOnMap: 'הצג מיקום במפה',
+  mapTitle: 'מיקום הביצוע',
+  /** The station's own coordinates on the map. */
+  mapStation: 'מיקום התחנה',
+  /** Where the worker's device was when they marked it done. */
+  mapCompletion: 'מקום הביצוע',
+  /** Popup detail on the completion marker, e.g. "דיוק ±12 מ׳". */
+  mapAccuracy: (meters: number) => `דיוק ±${meters} מ׳`,
+  /** Shown in the dialog when the worker's position was never captured. */
+  mapNoCompletion: 'לא נלכד מיקום לביצוע הזה',
+  closeMap: 'סגירה',
 } as const;
 
 export const copy = {

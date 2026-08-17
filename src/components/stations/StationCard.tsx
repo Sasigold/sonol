@@ -23,10 +23,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
 import { actions, fields, labels, location, states } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 import { distanceMeters } from '@/lib/geo';
 import { formatDistance } from '@/lib/format';
+import { StationMapDialog } from './StationMapDialog';
 import type { Station } from '@/hooks/useStations';
 
 /** Metres beyond which a completion is flagged as away from its station (§ location). */
@@ -68,7 +70,11 @@ export function StationCard({
       : null;
   const capturedCoords =
     station.completed_latitude !== null && station.completed_longitude !== null
-      ? { latitude: station.completed_latitude, longitude: station.completed_longitude }
+      ? {
+          latitude: station.completed_latitude,
+          longitude: station.completed_longitude,
+          accuracy: station.completed_accuracy ?? 0,
+        }
       : null;
   const completionDistance =
     isAdmin && station.is_done && stationCoords !== null && capturedCoords !== null
@@ -77,6 +83,11 @@ export function StationCard({
   const isFar =
     completionDistance !== null &&
     completionDistance - (station.completed_accuracy ?? 0) > FAR_THRESHOLD_M;
+
+  // A completed station with known coordinates can be shown on a map — the
+  // station's location and, when it was captured, where the worker stood.
+  const canShowMap = isAdmin && station.is_done && stationCoords !== null;
+  const [mapOpen, setMapOpen] = useState(false);
 
   return (
     <article
@@ -145,26 +156,37 @@ export function StationCard({
             </p>
           ) : null}
 
-          {/* Distance of the captured completion from the station (admin, §
-              location). Colour never carries it alone — a far one keeps the pin
-              icon and an explicit label. */}
-          {completionDistance !== null ? (
-            <p
+          {/* Distance of the captured completion from the station, and the way
+              into the map (admin, § location). Tapping opens the station and
+              completion points on a map. Colour never carries the "far" state
+              alone — the pin icon and an explicit badge are there too. */}
+          {canShowMap ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMapOpen(true);
+              }}
               className={cn(
-                'text-caption flex flex-wrap items-center gap-1',
-                isFar ? 'text-danger' : 'text-text-muted',
+                'text-caption flex flex-wrap items-center gap-1 text-start underline-offset-2 hover:underline',
+                completionDistance !== null && isFar ? 'text-danger' : 'text-text-muted',
               )}
             >
               <MapPin className="size-4 shrink-0" aria-hidden />
-              <span className="ltr-isolate">{formatDistance(completionDistance)}</span>
-              {location.fromStation}
-              {isFar ? (
+              {completionDistance !== null ? (
+                <>
+                  <span className="ltr-isolate">{formatDistance(completionDistance)}</span>
+                  {location.fromStation}
+                </>
+              ) : (
+                location.showOnMap
+              )}
+              {completionDistance !== null && isFar ? (
                 <Badge variant="danger">
                   <MapPin className="size-4" aria-hidden />
                   {location.farBadge}
                 </Badge>
               ) : null}
-            </p>
+            </button>
           ) : null}
         </div>
 
@@ -243,6 +265,17 @@ export function StationCard({
           </Button>
         </div>
       )}
+
+      {canShowMap ? (
+        <StationMapDialog
+          open={mapOpen}
+          onOpenChange={setMapOpen}
+          stationName={station.name}
+          station={stationCoords}
+          completion={capturedCoords}
+          isFar={isFar}
+        />
+      ) : null}
     </article>
   );
 }
