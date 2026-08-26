@@ -26,20 +26,10 @@ describe('copy', () => {
     expect(copy.pace.anomalyLeg('תחנת רמלה', 'תחנת לוד')).toBe('תחנת רמלה ← תחנת לוד');
   });
 
-  it('phrases the rapid-completion warning for both time framings', () => {
-    expect(copy.dialogs.completeWarning.rapid(0, 'תחנת רמלה')).toBe(
-      'לפני פחות מדקה כבר סימנת את תחנת רמלה.',
+  it('names the station in the far-from-station warning', () => {
+    expect(copy.dialogs.farStation.body('תחנת לוד')).toBe(
+      'נראה שאינך נמצא בתחנה תחנת לוד. ודא שאתה במקום הנכון לפני אישור הביצוע.',
     );
-    expect(copy.dialogs.completeWarning.rapid(1, 'תחנת רמלה')).toBe(
-      'לפני דקה כבר סימנת את תחנת רמלה.',
-    );
-  });
-
-  it('phrases the distance warning and its closing question', () => {
-    expect(copy.dialogs.completeWarning.far('320 מ׳')).toBe(
-      'המיקום שלך מרוחק 320 מ׳ מהתחנה — ייתכן שאינך נמצא בתחנה הנכונה.',
-    );
-    expect(copy.dialogs.completeWarning.question('תחנת לוד')).toBe('בטוח שביצעת את תחנת לוד?');
   });
 
   it('names the affected entity in every destructive dialog', () => {

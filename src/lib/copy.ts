@@ -198,36 +198,20 @@ export const dialogs = {
     body: 'נראה שאתה מנווט לתחנה שאינה הבאה ברשימה',
   },
   /**
-   * Authored, not in §9. Shown in place of the plain confirm when a completion
-   * looks off, so the worker catches the mistake before the tap is recorded —
-   * with a warning icon and tint (see `ConfirmDialog` `tone="warning"`) so it
-   * reads as a caution at a one-handed glance, not a routine "yes". Two
-   * independent causes, each a warning and never a block:
-   *
-   *   - `far`: the captured position is more than 100m from the station — the
-   *     worker may be at the wrong pump, or standing away from it.
-   *   - `rapid`: a second completion within two minutes of the previous one — a
-   *     fat-finger double-tap. The window is under two minutes, so `minutesAgo`
-   *     is only ever 0 or 1 in practice; the plural branch is belt-and-braces.
-   *
-   * `AreaPage` composes the active line(s) and the closing `question` into one
-   * body. The distance is a lone numeric run, embedded like the minute counts
-   * rather than bidi-isolated.
+   * Authored, not in §9. The prominent, deliberately-unlike-a-confirm warning
+   * shown when the position captured at the tap is more than 100m from the
+   * station (§ request). `FarStationDialog` renders it as a big danger banner
+   * with the distance as a hero figure, so a worker glancing one-handed cannot
+   * mistake it for the routine "did you do it?" confirm. A warning, never a
+   * block — `confirm` overrides it, cancel (`actions.cancel`) backs out. The
+   * distance itself is formatted by `formatDistance` and shown on its own line,
+   * bidi-isolated there rather than embedded here.
    */
-  completeWarning: {
-    title: 'שים לב',
-    far: (distance: string) =>
-      `המיקום שלך מרוחק ${distance} מהתחנה — ייתכן שאינך נמצא בתחנה הנכונה.`,
-    rapid: (minutesAgo: number, prevName: string) => {
-      const ago =
-        minutesAgo <= 0
-          ? 'לפני פחות מדקה'
-          : minutesAgo === 1
-            ? 'לפני דקה'
-            : `לפני ${minutesAgo} דקות`;
-      return `${ago} כבר סימנת את ${prevName}.`;
-    },
-    question: (name: string) => `בטוח שביצעת את ${name}?`,
+  farStation: {
+    title: 'אתה רחוק מהתחנה',
+    body: (name: string) =>
+      `נראה שאינך נמצא בתחנה ${name}. ודא שאתה במקום הנכון לפני אישור הביצוע.`,
+    confirm: 'אשר ביצוע בכל זאת',
   },
   deleteStation: {
     title: 'מחיקת תחנה',
