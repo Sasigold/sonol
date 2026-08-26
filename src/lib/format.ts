@@ -62,7 +62,7 @@ export function formatDistance(meters: number): string {
  * Whole minutes elapsed between two epoch-millisecond instants, floored.
  *
  * Trivial arithmetic, extracted so the rapid-completion warning's threshold
- * (§ dialogs.rapidComplete) is exercised by a unit test rather than only by a
+ * (§ dialogs.completeWarning) is exercised by a unit test rather than only by a
  * component test.
  */
 export function minutesSince(thenMs: number, nowMs: number): number {

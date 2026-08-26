@@ -25,3 +25,23 @@ export function distanceMeters(a: Coordinates, b: Coordinates): number {
     Math.cos(toRadians(a.latitude)) * Math.cos(toRadians(b.latitude)) * Math.sin(dLon / 2) ** 2;
   return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }
+
+/**
+ * Whether a captured position sits more than `thresholdMeters` from its station,
+ * after forgiving the GPS fix's own accuracy radius so a poor lock does not cry
+ * wolf. `distance` is null when either point is unknown — and then the answer is
+ * `false`: a completion we cannot place is never flagged as far.
+ *
+ * Shared by the worker's at-completion warning in `AreaPage` (a tight threshold,
+ * caught before the tap is recorded) and the admin's post-hoc flag on the
+ * station card (a looser one, for review). Same rule, two thresholds — so the
+ * accuracy handling can never drift between them.
+ */
+export function isFarFromStation(
+  distance: number | null,
+  accuracyMeters: number,
+  thresholdMeters: number,
+): boolean {
+  if (distance === null) return false;
+  return distance - accuracyMeters > thresholdMeters;
+}

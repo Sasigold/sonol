@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,14 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
+  /**
+   * `warning` marks a "did you mean to?" prompt — an unusual-but-allowed action,
+   * not a destructive one — with an alert icon and a warning-tinted title, so a
+   * worker glancing at it one-handed reads it as a caution and not a routine
+   * confirm. It leaves the confirm button alone (the action is not destructive);
+   * `destructive` is the separate, redder treatment for an irreversible one.
+   */
+  tone?: 'default' | 'warning';
   pending?: boolean;
   onConfirm: () => void;
 }
@@ -41,6 +49,7 @@ export function ConfirmDialog({
   confirmLabel = actions.confirm,
   cancelLabel = actions.cancel,
   destructive = false,
+  tone = 'default',
   pending = false,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -48,7 +57,12 @@ export function ConfirmDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogTitle
+            className={cn('flex items-center gap-2', tone === 'warning' && 'text-warning')}
+          >
+            {tone === 'warning' ? <AlertTriangle className="size-5 shrink-0" aria-hidden /> : null}
+            {title}
+          </AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

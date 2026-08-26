@@ -31,8 +31,16 @@ const { STATIONS, AREAS } = vi.hoisted(() => {
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   });
+  // station-c carries coordinates far from the mocked GPS fix below, to exercise
+  // the at-completion distance warning. a and b keep null coordinates, so the
+  // rapid-completion tests never trip the distance path.
+  const withCoords = { latitude: 32.0, longitude: 34.0 };
   return {
-    STATIONS: [station('station-a', 'תחנה א', 1), station('station-b', 'תחנה ב', 2)],
+    STATIONS: [
+      station('station-a', 'תחנה א', 1),
+      station('station-b', 'תחנה ב', 2),
+      { ...station('station-c', 'תחנה ג', 3), ...withCoords },
+    ],
     AREAS: [
       {
         area_id: 'area-1',
@@ -70,6 +78,14 @@ vi.mock('@/hooks/useAreas', () => ({
 
 vi.mock('@/hooks/useRealtimeStations', () => ({
   useRealtimeStations: () => undefined,
+}));
+
+// A warm, tight GPS fix ~5.5km north of station-c (and nowhere near a/b, which
+// have no coordinates anyway). Synchronous, like the real hook at confirm time.
+vi.mock('@/hooks/useGeolocationCapture', () => ({
+  useGeolocationCapture: () => ({
+    capture: () => ({ latitude: 32.05, longitude: 34.0, accuracy: 10 }),
+  }),
 }));
 
 vi.mock('@/hooks/useSortDirection', () => ({
@@ -126,8 +142,10 @@ describe('AreaPage rapid double-completion warning', () => {
     const markButtons = screen.getAllByRole('button', { name: actions.markDone });
     fireEvent.click(markButtons[1]!);
 
-    // The confirm body is the warning, naming the previous station.
-    expect(screen.getByText(dialogs.rapidComplete.body(0, 'תחנה א', 'תחנה ב'))).toBeInTheDocument();
+    // The confirm body is the warning, naming the previous station, followed by
+    // the closing question.
+    const rapidBody = `${dialogs.completeWarning.rapid(0, 'תחנה א')} ${dialogs.completeWarning.question('תחנה ב')}`;
+    expect(screen.getByText(rapidBody)).toBeInTheDocument();
     // ...and it is still just a confirm, not a block.
     expect(screen.getByRole('button', { name: actions.confirm })).toBeEnabled();
   });
@@ -144,7 +162,34 @@ describe('AreaPage rapid double-completion warning', () => {
 
     expect(screen.getByText(dialogs.confirmComplete.body('תחנה ב'))).toBeInTheDocument();
     expect(
-      screen.queryByText(dialogs.rapidComplete.body(0, 'תחנה א', 'תחנה ב')),
+      screen.queryByText(new RegExp(dialogs.completeWarning.rapid(0, 'תחנה א'))),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('AreaPage distance-from-station warning', () => {
+  it('warns when the worker is far from the station being completed', () => {
+    renderPage();
+
+    // station-c sits ~5.5km from the captured fix — well past the 100m threshold.
+    const markButtons = screen.getAllByRole('button', { name: actions.markDone });
+    fireEvent.click(markButtons[2]!);
+
+    // The warning names the distance concern; the plain confirm is not shown.
+    expect(screen.getByText(/ייתכן שאינך נמצא בתחנה הנכונה/)).toBeInTheDocument();
+    expect(screen.queryByText(dialogs.confirmComplete.body('תחנה ג'))).not.toBeInTheDocument();
+    // A warning, never a block — the worker can still confirm.
+    expect(screen.getByRole('button', { name: actions.confirm })).toBeEnabled();
+  });
+
+  it('does not warn when the station has no coordinates to compare against', () => {
+    renderPage();
+
+    // station-a has null coordinates, so the distance cannot be judged.
+    const markButtons = screen.getAllByRole('button', { name: actions.markDone });
+    fireEvent.click(markButtons[0]!);
+
+    expect(screen.getByText(dialogs.confirmComplete.body('תחנה א'))).toBeInTheDocument();
+    expect(screen.queryByText(/ייתכן שאינך נמצא בתחנה הנכונה/)).not.toBeInTheDocument();
   });
 });
