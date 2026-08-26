@@ -26,7 +26,7 @@ import {
 import { useState } from 'react';
 import { actions, fields, labels, location, states } from '@/lib/copy';
 import { cn } from '@/lib/utils';
-import { distanceMeters } from '@/lib/geo';
+import { distanceMeters, isFarFromStation } from '@/lib/geo';
 import { formatDistance } from '@/lib/format';
 import { StationMapDialog } from './StationMapDialog';
 import type { Station } from '@/hooks/useStations';
@@ -80,9 +80,11 @@ export function StationCard({
     isAdmin && station.is_done && stationCoords !== null && capturedCoords !== null
       ? distanceMeters(stationCoords, capturedCoords)
       : null;
-  const isFar =
-    completionDistance !== null &&
-    completionDistance - (station.completed_accuracy ?? 0) > FAR_THRESHOLD_M;
+  const isFar = isFarFromStation(
+    completionDistance,
+    station.completed_accuracy ?? 0,
+    FAR_THRESHOLD_M,
+  );
 
   // A completed station with known coordinates can be shown on a map — the
   // station's location and, when it was captured, where the worker stood.

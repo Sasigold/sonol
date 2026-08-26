@@ -23,15 +23,36 @@ import {
 } from '@/hooks/useStations';
 import { useRealtimeStations } from '@/hooks/useRealtimeStations';
 import { useSortDirection } from '@/hooks/useSortDirection';
-import { useGeolocationCapture } from '@/hooks/useGeolocationCapture';
+import { useGeolocationCapture, type CapturedPosition } from '@/hooks/useGeolocationCapture';
 import { navigateToStation } from '@/lib/waze';
-import { minutesSince } from '@/lib/format';
+import { distanceMeters, isFarFromStation } from '@/lib/geo';
+import { formatDistance, minutesSince } from '@/lib/format';
 import { toHebrewError } from '@/lib/errors';
 import { actions, dialogs, labels, nav, states, toasts } from '@/lib/copy';
 
+/**
+ * Reasons a completion is flagged before it is recorded — either, both, or
+ * neither. When neither is set the confirm is the plain one; when either is,
+ * the dialog switches to the warning tone and `completeDialogBody` composes the
+ * matching line(s).
+ */
+interface CompletionWarnings {
+  /** A previous completion within the window — a possible fat-finger double-tap. */
+  rapid?: { prevName: string; minutesAgo: number };
+  /** The captured position is beyond the distance threshold from the station. */
+  far?: { meters: number };
+}
+
 type PendingDialog =
-  | { kind: 'complete'; station: Station }
-  | { kind: 'rapidComplete'; station: Station; prevName: string; minutesAgo: number }
+  | {
+      kind: 'complete';
+      station: Station;
+      // Captured when the worker tapped (onComplete), so the distance warning
+      // and the position recorded on confirm are the same fix. Carried here into
+      // the mutation rather than re-captured at confirm.
+      coords: CapturedPosition | null;
+      warnings: CompletionWarnings;
+    }
   | { kind: 'uncomplete'; station: Station }
   | { kind: 'navigate'; station: Station }
   | null;
@@ -42,6 +63,39 @@ type PendingDialog =
  * back-to-back pair at two adjacent pumps is still well under this.
  */
 const RAPID_WINDOW_MS = 2 * 60_000;
+
+/**
+ * How far the worker may be from a station before completing it raises a
+ * warning (§ request). Deliberately tighter than the admin's 500m review flag
+ * on the station card: this one fires in the worker's own hand to catch a
+ * wrong-station tap, where a false alarm costs only a second glance. The GPS
+ * fix's own accuracy is forgiven on top of it — see `isFarFromStation`.
+ */
+const FAR_WARNING_THRESHOLD_M = 100;
+
+/** Whether a completion carries either warning, so the dialog switches tone. */
+function completionWarned(warnings: CompletionWarnings): boolean {
+  return warnings.far !== undefined || warnings.rapid !== undefined;
+}
+
+/**
+ * The confirm body for a completion: the plain question when nothing is off, or
+ * the active warning line(s) followed by the closing question. Distance and
+ * previous-station facts are both worker-facing, so this runs for everyone, not
+ * only admins.
+ */
+function completeDialogBody(station: Station, warnings: CompletionWarnings): string {
+  const lines: string[] = [];
+  if (warnings.far) {
+    lines.push(dialogs.completeWarning.far(formatDistance(warnings.far.meters)));
+  }
+  if (warnings.rapid) {
+    lines.push(dialogs.completeWarning.rapid(warnings.rapid.minutesAgo, warnings.rapid.prevName));
+  }
+  if (lines.length === 0) return dialogs.confirmComplete.body(station.name);
+  lines.push(dialogs.completeWarning.question(station.name));
+  return lines.join(' ');
+}
 
 export function AreaPage() {
   const { areaId } = useParams<{ areaId: string }>();
@@ -115,12 +169,12 @@ export function AreaPage() {
       return;
     }
 
-    const done = dialog.kind === 'complete' || dialog.kind === 'rapidComplete';
+    const done = dialog.kind === 'complete';
 
-    // Capture the worker's position synchronously at confirm time (§ location).
-    // For completions only, and it survives the offline path — the queued record
-    // carries it to replay.
-    const coords = done ? capture() : null;
+    // The position was captured when the worker tapped (onComplete) and rides
+    // this dialog; a completion carries it, an uncomplete never does. It survives
+    // the offline path — the queued record replays with it.
+    const coords = dialog.kind === 'complete' ? dialog.coords : null;
 
     if (done) {
       // Recorded at confirm time, not in onSuccess: a tap made offline resolves
@@ -145,17 +199,32 @@ export function AreaPage() {
 
   const cardHandlers = (station: Station) => ({
     onComplete: () => {
+      // Capture once, here at the tap: the distance check below and the position
+      // recorded on confirm must be the same fix. Null when denied, unavailable
+      // or stale — the distance simply cannot be judged, and no far warning fires.
+      const coords = capture();
+      const warnings: CompletionWarnings = {};
+
       const previous = lastCompleted.current;
       if (previous !== null && Date.now() - previous.at < RAPID_WINDOW_MS) {
-        setDialog({
-          kind: 'rapidComplete',
-          station,
+        warnings.rapid = {
           prevName: previous.name,
           minutesAgo: minutesSince(previous.at, Date.now()),
-        });
-        return;
+        };
       }
-      setDialog({ kind: 'complete', station });
+
+      const stationCoords =
+        station.latitude !== null && station.longitude !== null
+          ? { latitude: station.latitude, longitude: station.longitude }
+          : null;
+      if (coords !== null && stationCoords !== null) {
+        const meters = distanceMeters(stationCoords, coords);
+        if (isFarFromStation(meters, coords.accuracy, FAR_WARNING_THRESHOLD_M)) {
+          warnings.far = { meters };
+        }
+      }
+
+      setDialog({ kind: 'complete', station, coords, warnings });
     },
     onUncomplete: () => {
       setDialog({ kind: 'uncomplete', station });
@@ -371,8 +440,8 @@ export function AreaPage() {
             ? dialogs.navigateWarning.title
             : dialog?.kind === 'uncomplete'
               ? dialogs.confirmUncomplete.title
-              : dialog?.kind === 'rapidComplete'
-                ? dialogs.rapidComplete.title
+              : dialog?.kind === 'complete' && completionWarned(dialog.warnings)
+                ? dialogs.completeWarning.title
                 : dialogs.confirmComplete.title
         }
         description={
@@ -380,18 +449,15 @@ export function AreaPage() {
             ? dialogs.navigateWarning.body
             : dialog?.kind === 'uncomplete'
               ? dialogs.confirmUncomplete.body(dialog.station.name)
-              : dialog?.kind === 'rapidComplete'
-                ? dialogs.rapidComplete.body(
-                    dialog.minutesAgo,
-                    dialog.prevName,
-                    dialog.station.name,
-                  )
-                : dialog
-                  ? dialogs.confirmComplete.body(dialog.station.name)
-                  : ''
+              : dialog?.kind === 'complete'
+                ? completeDialogBody(dialog.station, dialog.warnings)
+                : ''
         }
         confirmLabel={dialog?.kind === 'navigate' ? actions.navigateAnyway : actions.confirm}
         destructive={dialog?.kind === 'uncomplete'}
+        tone={
+          dialog?.kind === 'complete' && completionWarned(dialog.warnings) ? 'warning' : 'default'
+        }
         pending={toggleStation.isPending}
         onConfirm={confirmDialog}
       />

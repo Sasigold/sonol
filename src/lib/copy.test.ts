@@ -27,12 +27,19 @@ describe('copy', () => {
   });
 
   it('phrases the rapid-completion warning for both time framings', () => {
-    expect(copy.dialogs.rapidComplete.body(0, 'תחנת רמלה', 'תחנת לוד')).toBe(
-      'לפני פחות מדקה סימנת את תחנת רמלה. בטוח שביצעת גם את תחנת לוד?',
+    expect(copy.dialogs.completeWarning.rapid(0, 'תחנת רמלה')).toBe(
+      'לפני פחות מדקה כבר סימנת את תחנת רמלה.',
     );
-    expect(copy.dialogs.rapidComplete.body(1, 'תחנת רמלה', 'תחנת לוד')).toBe(
-      'לפני דקה סימנת את תחנת רמלה. בטוח שביצעת גם את תחנת לוד?',
+    expect(copy.dialogs.completeWarning.rapid(1, 'תחנת רמלה')).toBe(
+      'לפני דקה כבר סימנת את תחנת רמלה.',
     );
+  });
+
+  it('phrases the distance warning and its closing question', () => {
+    expect(copy.dialogs.completeWarning.far('320 מ׳')).toBe(
+      'המיקום שלך מרוחק 320 מ׳ מהתחנה — ייתכן שאינך נמצא בתחנה הנכונה.',
+    );
+    expect(copy.dialogs.completeWarning.question('תחנת לוד')).toBe('בטוח שביצעת את תחנת לוד?');
   });
 
   it('names the affected entity in every destructive dialog', () => {

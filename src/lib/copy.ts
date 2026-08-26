@@ -198,25 +198,36 @@ export const dialogs = {
     body: 'נראה שאתה מנווט לתחנה שאינה הבאה ברשימה',
   },
   /**
-   * Authored, not in §9. Guards a fat-finger double completion: when a worker
-   * confirms a second station within two minutes of the previous one, the
-   * confirm body names the previous station and how long ago it was, so an
-   * accidental double-tap is caught while a genuine quick pair still goes
-   * through. A warning, never a block. The window is under two minutes, so
-   * `minutesAgo` is only ever 0 or 1 in practice; the plural branch is a
-   * belt-and-braces.
+   * Authored, not in §9. Shown in place of the plain confirm when a completion
+   * looks off, so the worker catches the mistake before the tap is recorded —
+   * with a warning icon and tint (see `ConfirmDialog` `tone="warning"`) so it
+   * reads as a caution at a one-handed glance, not a routine "yes". Two
+   * independent causes, each a warning and never a block:
+   *
+   *   - `far`: the captured position is more than 100m from the station — the
+   *     worker may be at the wrong pump, or standing away from it.
+   *   - `rapid`: a second completion within two minutes of the previous one — a
+   *     fat-finger double-tap. The window is under two minutes, so `minutesAgo`
+   *     is only ever 0 or 1 in practice; the plural branch is belt-and-braces.
+   *
+   * `AreaPage` composes the active line(s) and the closing `question` into one
+   * body. The distance is a lone numeric run, embedded like the minute counts
+   * rather than bidi-isolated.
    */
-  rapidComplete: {
+  completeWarning: {
     title: 'שים לב',
-    body: (minutesAgo: number, prevName: string, name: string) => {
+    far: (distance: string) =>
+      `המיקום שלך מרוחק ${distance} מהתחנה — ייתכן שאינך נמצא בתחנה הנכונה.`,
+    rapid: (minutesAgo: number, prevName: string) => {
       const ago =
         minutesAgo <= 0
           ? 'לפני פחות מדקה'
           : minutesAgo === 1
             ? 'לפני דקה'
             : `לפני ${minutesAgo} דקות`;
-      return `${ago} סימנת את ${prevName}. בטוח שביצעת גם את ${name}?`;
+      return `${ago} כבר סימנת את ${prevName}.`;
     },
+    question: (name: string) => `בטוח שביצעת את ${name}?`,
   },
   deleteStation: {
     title: 'מחיקת תחנה',
