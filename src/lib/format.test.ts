@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDistance, formatDuration, greeting, jerusalemHour, minutesSince } from './format';
+import { formatDistance, formatDuration, greeting, jerusalemHour } from './format';
 import { labels } from './copy';
 
 /**
@@ -55,15 +55,6 @@ describe('formatDuration', () => {
 
   it('zero-pads the minutes past the hour', () => {
     expect(formatDuration(3660)).toBe('1:01 שע׳');
-  });
-});
-
-describe('minutesSince', () => {
-  it('floors the elapsed whole minutes', () => {
-    const base = Date.UTC(2026, 0, 1, 12, 0, 0);
-    expect(minutesSince(base, base + 30_000)).toBe(0);
-    expect(minutesSince(base, base + 60_000)).toBe(1);
-    expect(minutesSince(base, base + 119_000)).toBe(1);
   });
 });
 

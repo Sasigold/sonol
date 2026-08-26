@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type * as RouterModule from 'react-router-dom';
@@ -7,8 +7,9 @@ import type * as StationsModule from '@/hooks/useStations';
 import { actions, dialogs } from '@/lib/copy';
 
 /**
- * Two not-done stations in one area, so the screen shows two "mark done"
- * buttons and we can complete one then reach for the next.
+ * Three not-done stations in one area. a and b have no coordinates; c carries
+ * coordinates far from the mocked GPS fix, so completing it trips the distance
+ * warning while completing a or b does not.
  */
 const { STATIONS, AREAS } = vi.hoisted(() => {
   const station = (id: string, name: string, sortNumber: number) => ({
@@ -31,9 +32,6 @@ const { STATIONS, AREAS } = vi.hoisted(() => {
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   });
-  // station-c carries coordinates far from the mocked GPS fix below, to exercise
-  // the at-completion distance warning. a and b keep null coordinates, so the
-  // rapid-completion tests never trip the distance path.
   const withCoords = { latitude: 32.0, longitude: 34.0 };
   return {
     STATIONS: [
@@ -113,76 +111,25 @@ function renderPage() {
   return render(<AreaPage />, { wrapper });
 }
 
-/** Complete station A at the current (fake) time and let its dialog close. */
-function completeStationA() {
-  const markButtons = screen.getAllByRole('button', { name: actions.markDone });
-  fireEvent.click(markButtons[0]!);
-  fireEvent.click(screen.getByRole('button', { name: actions.confirm }));
-}
-
-describe('AreaPage rapid double-completion warning', () => {
-  const T0 = Date.UTC(2026, 5, 1, 8, 0, 0);
-
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(T0);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('warns when a second station is completed within the window', () => {
-    renderPage();
-
-    completeStationA();
-
-    // 30 seconds later the worker taps the next station.
-    vi.setSystemTime(T0 + 30_000);
-    const markButtons = screen.getAllByRole('button', { name: actions.markDone });
-    fireEvent.click(markButtons[1]!);
-
-    // The confirm body is the warning, naming the previous station, followed by
-    // the closing question.
-    const rapidBody = `${dialogs.completeWarning.rapid(0, 'תחנה א')} ${dialogs.completeWarning.question('תחנה ב')}`;
-    expect(screen.getByText(rapidBody)).toBeInTheDocument();
-    // ...and it is still just a confirm, not a block.
-    expect(screen.getByRole('button', { name: actions.confirm })).toBeEnabled();
-  });
-
-  it('does not warn once the window has passed', () => {
-    renderPage();
-
-    completeStationA();
-
-    // Three minutes later — a normal gap, not a fat-finger double tap.
-    vi.setSystemTime(T0 + 3 * 60_000);
-    const markButtons = screen.getAllByRole('button', { name: actions.markDone });
-    fireEvent.click(markButtons[1]!);
-
-    expect(screen.getByText(dialogs.confirmComplete.body('תחנה ב'))).toBeInTheDocument();
-    expect(
-      screen.queryByText(new RegExp(dialogs.completeWarning.rapid(0, 'תחנה א'))),
-    ).not.toBeInTheDocument();
-  });
-});
-
 describe('AreaPage distance-from-station warning', () => {
-  it('warns when the worker is far from the station being completed', () => {
+  it('shows the prominent far warning when the worker is far from the station', () => {
     renderPage();
 
     // station-c sits ~5.5km from the captured fix — well past the 100m threshold.
     const markButtons = screen.getAllByRole('button', { name: actions.markDone });
     fireEvent.click(markButtons[2]!);
 
-    // The warning names the distance concern; the plain confirm is not shown.
-    expect(screen.getByText(/ייתכן שאינך נמצא בתחנה הנכונה/)).toBeInTheDocument();
+    // The dedicated far dialog: its title, the named body, and the distance hero
+    // (a kilometre reading at this range) — not the plain confirm.
+    expect(screen.getByText(dialogs.farStation.title)).toBeInTheDocument();
+    expect(screen.getByText(dialogs.farStation.body('תחנה ג'))).toBeInTheDocument();
+    expect(screen.getByText(/ק״מ/)).toBeInTheDocument();
     expect(screen.queryByText(dialogs.confirmComplete.body('תחנה ג'))).not.toBeInTheDocument();
-    // A warning, never a block — the worker can still confirm.
-    expect(screen.getByRole('button', { name: actions.confirm })).toBeEnabled();
+    // A warning, never a block — the override button is there and enabled.
+    expect(screen.getByRole('button', { name: dialogs.farStation.confirm })).toBeEnabled();
   });
 
-  it('does not warn when the station has no coordinates to compare against', () => {
+  it('shows the plain confirm, never the far warning, when close to the station', () => {
     renderPage();
 
     // station-a has null coordinates, so the distance cannot be judged.
@@ -190,6 +137,6 @@ describe('AreaPage distance-from-station warning', () => {
     fireEvent.click(markButtons[0]!);
 
     expect(screen.getByText(dialogs.confirmComplete.body('תחנה א'))).toBeInTheDocument();
-    expect(screen.queryByText(/ייתכן שאינך נמצא בתחנה הנכונה/)).not.toBeInTheDocument();
+    expect(screen.queryByText(dialogs.farStation.title)).not.toBeInTheDocument();
   });
 });

@@ -57,14 +57,3 @@ export function formatDistance(meters: number): string {
   if (meters < 1000) return labels.distanceMeters(Math.round(meters));
   return labels.distanceKm((meters / 1000).toFixed(1));
 }
-
-/**
- * Whole minutes elapsed between two epoch-millisecond instants, floored.
- *
- * Trivial arithmetic, extracted so the rapid-completion warning's threshold
- * (§ dialogs.completeWarning) is exercised by a unit test rather than only by a
- * component test.
- */
-export function minutesSince(thenMs: number, nowMs: number): number {
-  return Math.floor((nowMs - thenMs) / 60_000);
-}
