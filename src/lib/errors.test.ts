@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { classifyMutationError, toHebrewError } from './errors';
+import { FunctionsHttpError } from '@supabase/supabase-js';
+import {
+  classifyMutationError,
+  EdgeFunctionError,
+  ensureFunctionOk,
+  toHebrewError,
+} from './errors';
 import { errors } from './copy';
 
 /**
@@ -102,6 +108,65 @@ describe('toHebrewError', () => {
   it('reports offline when the browser says so, whatever the error says', () => {
     vi.stubGlobal('navigator', { onLine: false });
     expect(toHebrewError({ message: 'totally unknown' })).toBe(errors.offline);
+  });
+
+  it('passes an Edge Function message through untouched', () => {
+    // The admin functions map to Hebrew themselves; that final text must not be
+    // re-run against the English patterns, which would flatten it to generic.
+    expect(toHebrewError(new EdgeFunctionError(errors.emailAlreadyRegistered))).toBe(
+      errors.emailAlreadyRegistered,
+    );
+  });
+});
+
+/**
+ * The admin Edge Functions answer with a real HTTP status and a Hebrew
+ * `{ error }` body. functions-js strands that body on a FunctionsHttpError, so
+ * the reason (duplicate email, weak password) never reached the toast — every
+ * failure looked identical. ensureFunctionOk recovers the specific text.
+ */
+describe('ensureFunctionOk', () => {
+  it('does nothing on success', async () => {
+    await expect(
+      ensureFunctionOk({ data: { id: 'x' } as never, error: null }),
+    ).resolves.toBeUndefined();
+    await expect(ensureFunctionOk({ data: null, error: null })).resolves.toBeUndefined();
+  });
+
+  it('raises the Hebrew message a 2xx body carries', async () => {
+    await expect(
+      ensureFunctionOk({ data: { error: errors.emailAlreadyRegistered }, error: null }),
+    ).rejects.toMatchObject({
+      name: 'EdgeFunctionError',
+      message: errors.emailAlreadyRegistered,
+    });
+  });
+
+  it('recovers the Hebrew stranded on a non-2xx FunctionsHttpError', async () => {
+    const httpError = new FunctionsHttpError({
+      json: () => Promise.resolve({ error: errors.passwordTooShort }),
+    });
+
+    await expect(ensureFunctionOk({ data: null, error: httpError })).rejects.toMatchObject({
+      name: 'EdgeFunctionError',
+      message: errors.passwordTooShort,
+    });
+  });
+
+  it('falls back to generic when a gateway error has no JSON body', async () => {
+    const httpError = new FunctionsHttpError({
+      json: () => Promise.reject(new SyntaxError('not json')),
+    });
+
+    await expect(ensureFunctionOk({ data: null, error: httpError })).rejects.toMatchObject({
+      name: 'EdgeFunctionError',
+      message: errors.generic,
+    });
+  });
+
+  it('re-throws a network/relay error as-is, so offline handling still applies', async () => {
+    const network = new TypeError('Failed to fetch');
+    await expect(ensureFunctionOk({ data: null, error: network })).rejects.toBe(network);
   });
 });
 
