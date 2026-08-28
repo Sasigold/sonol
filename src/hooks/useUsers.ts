@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase, type Tables } from '@/lib/supabase';
+import { ensureFunctionOk } from '@/lib/errors';
 
 export type Profile = Tables<'profiles'>;
 
@@ -128,11 +129,11 @@ export function useCreateUser() {
       const response = await supabase.functions.invoke<{ error?: string }>('admin-create-user', {
         body: input,
       });
-      if (response.error) throw response.error;
-      // The function answers 200 with a Hebrew message for expected failures
-      // (duplicate email, weak password) so the text reaches the toast intact.
-      const message = response.data?.error;
-      if (typeof message === 'string') throw new Error(message);
+      // The function answers with a real HTTP status and a Hebrew `{ error }`
+      // body for expected failures (duplicate email, weak password); ensureFunctionOk
+      // reads that Hebrew text — from `data` on 2xx, or from the stranded
+      // FunctionsHttpError response on a non-2xx — so it reaches the toast intact.
+      await ensureFunctionOk(response);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: userKeys.all });
@@ -152,9 +153,7 @@ export function useResetUserPassword() {
       const response = await supabase.functions.invoke<{ error?: string }>('admin-reset-password', {
         body: { user_id: userId, password },
       });
-      if (response.error) throw response.error;
-      const message = response.data?.error;
-      if (typeof message === 'string') throw new Error(message);
+      await ensureFunctionOk(response);
     },
   });
 }
@@ -167,9 +166,7 @@ export function useDeleteUser() {
       const response = await supabase.functions.invoke<{ error?: string }>('admin-delete-user', {
         body: { user_id: userId },
       });
-      if (response.error) throw response.error;
-      const message = response.data?.error;
-      if (typeof message === 'string') throw new Error(message);
+      await ensureFunctionOk(response);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: userKeys.all });

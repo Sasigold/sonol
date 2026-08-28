@@ -1,5 +1,18 @@
-import { AuthError, type PostgrestError } from '@supabase/supabase-js';
+import { AuthError, FunctionsHttpError, type PostgrestError } from '@supabase/supabase-js';
 import { errors } from './copy';
+
+/**
+ * An error whose message is ALREADY final Hebrew, produced server-side by an
+ * admin Edge Function (§9.6 — the functions map Supabase's English to Hebrew
+ * before they answer). `toHebrewError` passes it through untouched; anything
+ * else is treated as a raw Supabase error and re-mapped.
+ */
+export class EdgeFunctionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EdgeFunctionError';
+  }
+}
 
 /**
  * Supabase error → Hebrew (brief §9.6).
@@ -76,6 +89,12 @@ function hasStringProp<K extends string>(value: unknown, key: K): value is Recor
 export function toHebrewError(error: unknown): string {
   if (error == null) return errors.generic;
 
+  // An Edge Function already answered in Hebrew (§9.6). Return it verbatim
+  // rather than running it against the English patterns below, which do not
+  // match Hebrew and would flatten every specific reason to the generic
+  // sentence.
+  if (error instanceof EdgeFunctionError) return error.message;
+
   // Offline is checked first: a fetch failure carries no useful code, and the
   // brief wants the "will sync later" wording rather than a generic failure.
   const message = hasStringProp(error, 'message') ? error.message : '';
@@ -105,6 +124,49 @@ export function toHebrewError(error: unknown): string {
   if (/cannot revoke your own admin role/i.test(message)) return errors.permissionDenied;
 
   return errors.generic;
+}
+
+/**
+ * Surface the Hebrew `{ error }` an admin Edge Function returns.
+ *
+ * The functions answer with a real HTTP status — 409 (duplicate email), 400
+ * (weak password), 403 (not an admin) — and a Hebrew body `{ error }`.
+ * functions-js turns any non-2xx into a `FunctionsHttpError` WITHOUT parsing
+ * the body into `data`, so the message is stranded on `error.context` (the raw
+ * Response) and has to be read from there; a 2xx `{ error }` is read straight
+ * from `data`. Either way the text is already final Hebrew, so it is raised as
+ * an `EdgeFunctionError`, which `toHebrewError` returns unchanged.
+ *
+ * A network / relay failure carries no HTTP response and is re-thrown as-is, so
+ * the offline handling in `toHebrewError` still applies.
+ */
+export async function ensureFunctionOk(response: {
+  data: { error?: string } | null;
+  error: unknown;
+}): Promise<void> {
+  const { data, error } = response;
+
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      let hebrew: string | undefined;
+      try {
+        // `context` is the raw Response, typed `any` by functions-js.
+        const body: unknown = await (error.context as Response).json();
+        if (hasStringProp(body, 'error')) hebrew = body.error;
+      } catch {
+        // A gateway-level failure (e.g. a boot error) can answer with a
+        // non-JSON body; fall back to the generic Hebrew sentence.
+      }
+      throw new EdgeFunctionError(hebrew ?? errors.generic);
+    }
+    // A network / relay failure is a real Error; re-throw it so the offline
+    // handling in toHebrewError still applies.
+    throw error instanceof Error ? error : new EdgeFunctionError(errors.generic);
+  }
+
+  if (hasStringProp(data, 'error')) {
+    throw new EdgeFunctionError(data.error);
+  }
 }
 
 /**
