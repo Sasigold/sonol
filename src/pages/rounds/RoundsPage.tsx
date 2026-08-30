@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { ArrowRight, ChevronDown, ChevronUp, Download, History } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Download, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -231,6 +231,16 @@ function RoundCard({
                 ))}
               </dl>
             )
+          ) : null}
+
+          {round.round_id ? (
+            <Button asChild variant="outline" className="self-start">
+              <Link to={`/rounds/${round.round_id}`}>
+                {copy.viewStations}
+                {/* "Forward" in RTL points left. */}
+                <ArrowLeft className="size-4" aria-hidden />
+              </Link>
+            </Button>
           ) : null}
         </div>
       ) : null}

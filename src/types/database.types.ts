@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -178,6 +178,13 @@ export type Database = {
             foreignKeyName: "station_completions_station_id_fkey"
             columns: ["station_id"]
             isOneToOne: false
+            referencedRelation: "round_station_history"
+            referencedColumns: ["station_id"]
+          },
+          {
+            foreignKeyName: "station_completions_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
             referencedRelation: "stations"
             referencedColumns: ["id"]
           },
@@ -290,6 +297,13 @@ export type Database = {
             referencedColumns: ["area_id"]
           },
           {
+            foreignKeyName: "stations_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "round_station_history"
+            referencedColumns: ["area_id"]
+          },
+          {
             foreignKeyName: "stations_completed_by_fkey"
             columns: ["completed_by"]
             isOneToOne: false
@@ -341,6 +355,13 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "my_areas"
+            referencedColumns: ["area_id"]
+          },
+          {
+            foreignKeyName: "user_areas_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "round_station_history"
             referencedColumns: ["area_id"]
           },
           {
@@ -408,6 +429,13 @@ export type Database = {
             foreignKeyName: "station_completions_station_id_fkey"
             columns: ["to_station_id"]
             isOneToOne: false
+            referencedRelation: "round_station_history"
+            referencedColumns: ["station_id"]
+          },
+          {
+            foreignKeyName: "station_completions_station_id_fkey"
+            columns: ["to_station_id"]
+            isOneToOne: false
             referencedRelation: "stations"
             referencedColumns: ["id"]
           },
@@ -459,6 +487,13 @@ export type Database = {
             foreignKeyName: "station_completions_station_id_fkey"
             columns: ["station_id"]
             isOneToOne: false
+            referencedRelation: "round_station_history"
+            referencedColumns: ["station_id"]
+          },
+          {
+            foreignKeyName: "station_completions_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
             referencedRelation: "stations"
             referencedColumns: ["id"]
           },
@@ -495,6 +530,13 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "my_areas"
+            referencedColumns: ["area_id"]
+          },
+          {
+            foreignKeyName: "stations_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "round_station_history"
             referencedColumns: ["area_id"]
           },
         ]
@@ -541,6 +583,58 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rounds"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      round_station_history: {
+        Row: {
+          accuracy: number | null
+          area_id: string | null
+          area_name: string | null
+          area_sort_order: number | null
+          completed_at: string | null
+          distance_m: number | null
+          is_far: boolean | null
+          latitude: number | null
+          longitude: number | null
+          queued: boolean | null
+          round_id: string | null
+          sort_number: number | null
+          station_id: string | null
+          station_latitude: number | null
+          station_longitude: number | null
+          station_name: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "round_stats"
+            referencedColumns: ["round_id"]
+          },
+          {
+            foreignKeyName: "station_completions_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_stats"
+            referencedColumns: ["user_id"]
           },
         ]
       }

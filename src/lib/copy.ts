@@ -335,6 +335,11 @@ export const states = {
     title: 'לא נמצאו תחנות',
     body: 'נסה מונח חיפוש אחר',
   },
+  /** The per-station drill-down for a round (`RoundStationHistoryPage`). */
+  noStationsInRound: {
+    title: 'לא בוצעו תחנות בסבב זה',
+    body: 'ביצועים יופיעו כאן לאחר שעובד יסמן תחנה כבוצעה',
+  },
 } as const;
 
 /* 9.8 Toasts ----------------------------------------------------------------- */
@@ -433,6 +438,15 @@ export const history = {
    */
   firstCompletion: 'ביצוע ראשון',
   lastCompletion: 'ביצוע אחרון',
+  /**
+   * The per-station drill-down (`RoundStationHistoryPage`), linked from a round
+   * card. `round_station_history` never drops a station for lack of GPS — this
+   * is the cell text for that row instead of leaving it blank.
+   */
+  viewStations: 'פרטי תחנות',
+  stationsTitle: 'תחנות שבוצעו',
+  colCompletedAt: 'זמן ביצוע',
+  noLocation: 'לא נלכד מיקום',
 } as const;
 
 /* Blocked screen (§8.3) ------------------------------------------------------ */
