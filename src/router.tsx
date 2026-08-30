@@ -41,6 +41,9 @@ const AreasPage = lazy(async () => ({
 const RoundsPage = lazy(async () => ({
   default: (await import('@/pages/rounds/RoundsPage')).RoundsPage,
 }));
+const RoundStationHistoryPage = lazy(async () => ({
+  default: (await import('@/pages/rounds/RoundStationHistoryPage')).RoundStationHistoryPage,
+}));
 const UserCreatePage = lazy(async () => ({
   default: (await import('@/pages/users/UserCreatePage')).UserCreatePage,
 }));
@@ -139,6 +142,14 @@ export const router = createBrowserRouter([
                     element: (
                       <Lazy>
                         <RoundsPage />
+                      </Lazy>
+                    ),
+                  },
+                  {
+                    path: '/rounds/:roundId',
+                    element: (
+                      <Lazy>
+                        <RoundStationHistoryPage />
                       </Lazy>
                     ),
                   },
