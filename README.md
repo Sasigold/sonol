@@ -206,6 +206,50 @@ update public.profiles set is_admin = true where id = auth.uid();
 שם העובד מגיע מ-`user_name` שנשמר בשורת הלוג ולא מ-JOIN לפרופיל — כך סבב ישן
 ממשיך להציג את מי שביצע גם אחרי שהחשבון נמחק.
 
+## פיד למסך הקיר (ViperGroup)
+
+מסך הקיר במשרד (ViperGroup) מציג את התקדמות הסבב. הוא קורא snapshot אחד, לקריאה
+בלבד, דרך ה-Edge Function `wall-feed`, שמריצה את `public.wall_snapshot(p_secret)`
+(`0008_wall_snapshot.sql`). החוזה — שמות השדות ומשמעותם — מתועד ב-
+`docs/FEEDS.md` §2 במאגר ViperGroup; שינוי מתחיל שם.
+
+- **מה מוחזר:** הסבב הפתוח; סיכומים, כולל `super_count`/`super_remaining` —
+  **ספירת** תחנות סופר, לא נפח הדלק של `global_stats.total_super`; מעטפות
+  ועלונים שממתינים בתחנות שטרם בוצעו; אזורים; קצב (`done_today`, `done_15m`,
+  `done_60m`, `per_hour`, `eta_at`); סדרת 15 דקות להיום; עובדים; מספר הסימונים
+  "רחוק מהתחנה" בסבב הפתוח; ותחנות עם קואורדינטות למפה. "היום" הוא התאריך
+  בישראל. נספרים רק סימונים עומדים (`stations.is_done`) — ביטול מוריד אותם.
+- **הרשאות:** רק `service_role` רשאי להריץ את `wall_snapshot`. הלוגיקה
+  (`wall_snapshot_at`) ובדיקת הסוד (`wall_feed_check`) חסומות לכולם — קריאה
+  ישירה הייתה עוקפת את הסוד.
+- **הסוד:** המסך שולח אותו בכותרת `x-wall-secret`, לפחות 32 תווים. ב-Vault
+  נשמר רק ה-sha256 שלו (hex) בשם `wall_feed_secret` — לעולם לא הסוד עצמו,
+  ולעולם לא במיגרציה. הגדרה והחלפה ב-SQL Editor:
+
+  ```sql
+  -- הגדרה ראשונה
+  select vault.create_secret(
+    encode(sha256(convert_to('<secret>', 'UTF8')), 'hex'),
+    'wall_feed_secret', 'sha256 of the ViperGroup wall secret');
+
+  -- החלפה
+  select vault.update_secret(
+    (select id from vault.secrets where name = 'wall_feed_secret'),
+    encode(sha256(convert_to('<new secret>', 'UTF8')), 'hex'));
+  ```
+
+  אפשר גם לחשב את ה-hash מקומית (`printf '%s' "$SECRET" | sha256sum`) ולהדביק
+  רק אותו — כך הסוד לא עובר בבסיס הנתונים כלל. אחרי החלפה מעדכנים את
+  `SONOL_FEED_SECRET` בפרויקט ViperGroup.
+
+- **פריסה:** `npx supabase functions deploy wall-feed --no-verify-jwt` — לקורא
+  אין JWT של Supabase, הסוד הוא האימות. תשובות: 401 סוד חסר או שגוי, 503 אין
+  hash ב-Vault, 500 כל שגיאה אחרת, 200 עם `Cache-Control: no-store`.
+- **בדיקה:** `sudo ./supabase/tests/run-wall-snapshot.sh` (PostgreSQL 16 ומעלה)
+  מקים cluster זמני, מריץ את כל המיגרציות ואת `supabase/tests/wall_snapshot.sql`
+  — הרשאות, הסוד, והמספרים בשעון מקובע, כולל גבול חצות בישראל. לא נוגע בשום
+  פרויקט Supabase.
+
 ## עבודה ללא חיבור
 
 המשתמש נוסע ברכב. הנחת היסוד היא שהחיבור ייעלם באמצע הסבב.
@@ -286,8 +330,9 @@ src/
 e2e/          תסריטי Playwright   (חסומים מאחורי משתנה סביבה)
 scripts/      בדיקות RTL וסולם הטוקנים, יצירת אייקונים
 supabase/
-  migrations/ 0001_initial_schema.sql  0002_round_history.sql
-  functions/  admin-create-user  admin-delete-user  admin-reset-password
+  migrations/ 0001_initial_schema.sql … 0008_wall_snapshot.sql
+  functions/  admin-create-user  admin-delete-user  admin-reset-password  wall-feed
+  tests/      run-wall-snapshot.sh  wall_snapshot.sql  (בדיקת SQL של פיד הקיר)
 .github/
   workflows/  verify.yml          (CI)
 vercel.json                       (SPA fallback)

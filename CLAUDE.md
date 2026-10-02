@@ -111,6 +111,20 @@ defect in the original app.
 > the RPC throws `admin only`. Create the account with the service-role client,
 > then call the RPCs through a client carrying the _caller's_ JWT.
 
+**The wall feed is the one server-to-server read.** `wall_snapshot(p_secret)`
+(0008) returns the ViperGroup wall display's JSON — open round, totals (super
+as a station _count_, not `total_super` fuel volume), areas, pace/ETA, today's
+15-minute series, workers, far-from-station count, map stations — per the
+contract in ViperGroup `docs/FEEDS.md` §2; change it there first. Only
+`service_role` may execute it; the logic is `wall_snapshot_at(p_now)` and the
+secret check `wall_feed_check`, both executable by nobody. Vault holds the
+secret's sha256 (hex) as `wall_feed_secret` — set and rotated with SQL, never in
+a migration:
+`select vault.create_secret(encode(sha256(convert_to('<secret>','UTF8')),'hex'),'wall_feed_secret','sha256 of the ViperGroup wall secret');`
+/ `vault.update_secret(<id>, <new hash>)`. Edge function `wall-feed` is deployed
+with `verify_jwt = false` (`--no-verify-jwt`): the `x-wall-secret` header is the
+authentication; 28P01 → 401, 55000 → 503, anything else → 500.
+
 ---
 
 ## 4. Database
@@ -136,6 +150,12 @@ those revokes any signed-in user could run
 will otherwise hand `anon` and `authenticated` full access at CREATE time.
 
 Types are generated, never hand-written: `npm run gen:types`.
+
+The only SQL test is the wall feed's: `sudo ./supabase/tests/run-wall-snapshot.sh`
+(PG16+, root) builds a scratch cluster under `/var/tmp`, stubs what Supabase
+provides (roles and default privileges, `auth`, `storage`, Vault), applies
+every migration and runs `supabase/tests/wall_snapshot.sql`. It touches no
+Supabase project. A new migration must still apply there.
 
 ---
 
