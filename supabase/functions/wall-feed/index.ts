@@ -12,10 +12,11 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
  * without a signed-in admin they answer with nothing, and the wall must hold
  * neither a service-role key nor a user's password. Instead the wall holds one
  * revocable secret. It arrives in `x-wall-secret` and is checked IN THE
- * DATABASE: `wall_snapshot(p_secret)` compares its sha256 with the hash kept in
- * Vault as `wall_feed_secret` (0008_wall_snapshot.sql), and only service_role
- * may execute it — which is why the client below uses the injected
- * service-role key. The key never leaves this function.
+ * DATABASE: `wall_snapshot(p_secret)` compares its sha256 with the hashes kept
+ * in Vault — one per wall deployment, any row named `wall_feed_secret%`, e.g.
+ * `wall_feed_secret` and `wall_feed_secret_minipc` (0008_wall_snapshot.sql) —
+ * and only service_role may execute it, which is why the client below uses the
+ * injected service-role key. The key never leaves this function.
  *
  * Deployed with verify_jwt = false: the caller has no Supabase JWT, and the
  * gateway would otherwise refuse it before this code runs. The secret is the

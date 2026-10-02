@@ -10,6 +10,10 @@
 --     service_role executes wall_snapshot only;
 --   * the secret: unset -> 55000, wrong / short / null -> 28P01, right -> JSON,
 --     rotation through vault.update_secret;
+--   * several secrets (one Vault row per wall deployment, any name starting
+--     with wall_feed_secret): each is accepted, an unknown one is 28P01, rotating
+--     one row leaves the others working, unrelated / look-alike names never
+--     count, malformed rows are ignored, no valid row at all -> 55000;
 --   * the numbers, at pinned clocks: totals (super as a station COUNT, markers
 --     pending only on stations not done), areas, pace (60m rate, today's
 --     average fallback, ETA), 15-minute series, workers, far completions,
@@ -59,6 +63,40 @@ begin
   return 'pass  ' || p_label;
 exception when others then
   return 'FAIL  ' || p_label || ' — ' || sqlstate || ' ' || sqlerrm;
+end $$;
+
+-- sha256 of a secret, in hex: what Vault holds
+create function t.h(p_secret text)
+returns text language sql immutable as $$
+  select encode(sha256(convert_to(p_secret, 'UTF8')), 'hex')
+$$;
+
+-- Calls wall_snapshot(p_secret) AS service_role (the only role that may), then
+-- goes back to the caller's role, so a test can alternate between changing
+-- Vault (superuser; the stub gives service_role no access to it) and calling
+-- the feed. p_expected is the SQLSTATE the call must raise, or null if it must
+-- succeed.
+create function t.wall(p_label text, p_secret text, p_expected text default null)
+returns text language plpgsql as $$
+declare
+  v_prev text := current_user;
+begin
+  perform set_config('role', 'service_role', true);
+  begin
+    perform public.wall_snapshot(p_secret);
+  exception when others then
+    perform set_config('role', v_prev, true);   -- the subtransaction rolled it back
+    if sqlstate = p_expected then
+      return 'pass  ' || p_label;
+    end if;
+    return 'FAIL  ' || p_label || ' — SQLSTATE ' || sqlstate || ' (' || sqlerrm || '), expected '
+        || coalesce(p_expected, 'success');
+  end;
+  perform set_config('role', v_prev, true);
+  if p_expected is null then
+    return 'pass  ' || p_label;
+  end if;
+  return 'FAIL  ' || p_label || ' — succeeded, expected SQLSTATE ' || p_expected;
 end $$;
 
 -- Sorted top-level keys of a JSON object, for contract checks.
@@ -253,6 +291,146 @@ select t.raises('after rotation: old secret -> 28P01',
 select t.ok('after rotation: new secret -> snapshot',
   $$select public.wall_snapshot('rotated-wall-secret-0123456789abcdef')$$);
 reset role;
+
+
+-- ===== 2b. several secrets: wall_feed_secret% ==================================
+-- One Vault row per wall deployment: `wall_feed_secret` (Vercel) and
+-- `wall_feed_secret_minipc` (Mini PC). A secret is accepted if its hash equals
+-- ANY row whose name starts with `wall_feed_secret`. Everything below runs in
+-- one transaction that is rolled back, so Vault ends as section 2 left it: a
+-- single `wall_feed_secret` row holding the rotated secret.
+--
+--   V  vercel-wall-secret-...-01   Vercel          M  minipc-wall-secret-...-02  Mini PC
+--   V2 / M2 their rotations        U  a secret no row holds
+--   D  a secret held only by rows that must NOT count (decoys)
+begin;
+
+delete from vault.secrets where starts_with(name, 'wall_feed_secret');
+
+-- decoys, all holding the hash of D, kept for the whole section
+do $$ begin
+  perform vault.create_secret(t.h('decoy-wall-secret-0123456789abcdef-99'), 'other_secret', 'unrelated');
+  perform vault.create_secret(t.h('decoy-wall-secret-0123456789abcdef-99'), 'my_wall_feed_secret', 'prefix is not at the start');
+  perform vault.create_secret(t.h('decoy-wall-secret-0123456789abcdef-99'), 'wallXfeedXsecret', 'underscores are not LIKE wildcards');
+  perform vault.create_secret(t.h('decoy-wall-secret-0123456789abcdef-99'), 'wall_feed_secre', 'one letter short of the prefix');
+  perform vault.create_secret(t.h('decoy-wall-secret-0123456789abcdef-99'), null, 'no name');
+end $$;
+
+select t.wall('only decoy rows in Vault (unrelated, suffix, "_"-as-wildcard, short prefix, unnamed) -> 55000',
+  'decoy-wall-secret-0123456789abcdef-99', '55000');
+
+-- 2b.1 two rows, the commands the README documents
+select t.ok('configure Vercel: the documented vault.create_secret command',
+  $q$select vault.create_secret(encode(sha256(convert_to('vercel-wall-secret-0123456789abcdef-01','UTF8')),'hex'),'wall_feed_secret','sha256 of the ViperGroup wall secret')$q$);
+select t.ok('configure Mini PC: the documented vault.create_secret command',
+  $q$select vault.create_secret(encode(sha256(convert_to('minipc-wall-secret-0123456789abcdef-02','UTF8')),'hex'),'wall_feed_secret_minipc','sha256 of the Mini PC wall secret')$q$);
+
+select t.wall('two rows: the Vercel secret is accepted',
+  'vercel-wall-secret-0123456789abcdef-01');
+select t.wall('two rows: the Mini PC secret is accepted',
+  'minipc-wall-secret-0123456789abcdef-02');
+select t.wall('two rows: a third, unknown secret -> 28P01',
+  'unknown-wall-secret-0123456789abcdef-3', '28P01');
+select t.wall('two rows: a one-character change in either secret -> 28P01',
+  'minipc-wall-secret-0123456789abcdef-03', '28P01');
+select t.wall('two rows: empty secret -> 28P01', '', '28P01');
+select t.wall('two rows: null secret -> 28P01', null, '28P01');
+select t.eq('two rows: the Mini PC secret gets the real payload',
+  (select j->>'source' from (select public.wall_snapshot('minipc-wall-secret-0123456789abcdef-02') j) x),
+  'sonol');
+
+-- 2b.2 the decoys hold hash(D), and still do not count
+select t.wall('decoy rows hold the hash of D, which is NOT accepted (other_secret and look-alikes)',
+  'decoy-wall-secret-0123456789abcdef-99', '28P01');
+
+-- 2b.3 rotating one row leaves the other working
+select t.ok('rotate Mini PC: vault.update_secret on its own row',
+  $q$select vault.update_secret((select id from vault.secrets where name = 'wall_feed_secret_minipc'), encode(sha256(convert_to('minipc-rotated-secret-0123456789abcdef-02','UTF8')),'hex'))$q$);
+select t.wall('after rotating Mini PC: its old secret -> 28P01',
+  'minipc-wall-secret-0123456789abcdef-02', '28P01');
+select t.wall('after rotating Mini PC: its new secret is accepted',
+  'minipc-rotated-secret-0123456789abcdef-02');
+select t.wall('after rotating Mini PC: Vercel is untouched',
+  'vercel-wall-secret-0123456789abcdef-01');
+
+select t.ok('rotate Vercel: vault.update_secret on its own row',
+  $q$select vault.update_secret((select id from vault.secrets where name = 'wall_feed_secret'), encode(sha256(convert_to('vercel-rotated-secret-0123456789abcdef-01','UTF8')),'hex'))$q$);
+select t.wall('after rotating Vercel: its old secret -> 28P01',
+  'vercel-wall-secret-0123456789abcdef-01', '28P01');
+select t.wall('after rotating Vercel: its new secret is accepted',
+  'vercel-rotated-secret-0123456789abcdef-01');
+select t.wall('after rotating Vercel: the rotated Mini PC secret still works',
+  'minipc-rotated-secret-0123456789abcdef-02');
+
+-- 2b.4 any name that starts with wall_feed_secret is a row; the hash may be
+--      upper case or padded with spaces
+do $$ begin
+  perform vault.create_secret(t.h('unknown-wall-secret-0123456789abcdef-3'), 'wall_feed_secret_staging', 'a third caller');
+end $$;
+select t.wall('a third row, wall_feed_secret_staging: its secret is accepted',
+  'unknown-wall-secret-0123456789abcdef-3');
+delete from vault.secrets where name = 'wall_feed_secret_staging';
+select t.wall('the third row deleted (revoked): its secret -> 28P01',
+  'unknown-wall-secret-0123456789abcdef-3', '28P01');
+select t.wall('the third row revoked: the other two still work',
+  'vercel-rotated-secret-0123456789abcdef-01');
+
+do $$ begin
+  perform vault.create_secret('  ' || upper(t.h('unknown-wall-secret-0123456789abcdef-3')) || ' ', 'wall_feed_secret_staging', 'upper case, padded');
+end $$;
+select t.wall('an upper-case, space-padded hash is accepted',
+  'unknown-wall-secret-0123456789abcdef-3');
+delete from vault.secrets where name = 'wall_feed_secret_staging';
+
+-- 2b.5 a malformed row is ignored; the valid rows keep working
+do $$ begin
+  perform vault.create_secret('not-a-hash',                                  'wall_feed_secret_bad1', 'garbage');
+  perform vault.create_secret(repeat('z', 64),                               'wall_feed_secret_bad2', '64 chars, not hex');
+  perform vault.create_secret('',                                            'wall_feed_secret_bad3', 'empty');
+  -- the secret itself, stored by mistake instead of its hash
+  perform vault.create_secret('unknown-wall-secret-0123456789abcdef-3',      'wall_feed_secret_bad4', 'plaintext secret');
+  perform vault.create_secret(left(t.h('unknown-wall-secret-0123456789abcdef-3'), 63), 'wall_feed_secret_bad5', 'hash, one digit short');
+  perform vault.create_secret(t.h('unknown-wall-secret-0123456789abcdef-3') || '0',    'wall_feed_secret_bad6', 'hash, one digit long');
+end $$;
+select t.wall('malformed rows present: the Vercel secret still works',
+  'vercel-rotated-secret-0123456789abcdef-01');
+select t.wall('malformed rows present: the Mini PC secret still works',
+  'minipc-rotated-secret-0123456789abcdef-02');
+select t.wall('malformed rows present: a secret stored in plaintext does not authenticate',
+  'unknown-wall-secret-0123456789abcdef-3', '28P01');
+select t.wall('malformed rows present: an unknown secret -> 28P01 (not 55000)',
+  'unknown-wall-secret-0123456789abcdef-4', '28P01');
+
+-- 2b.6 no valid row left -> 55000, as with an invalid value before
+delete from vault.secrets where name in ('wall_feed_secret', 'wall_feed_secret_minipc');
+select t.wall('only malformed rows left -> 55000 (not configured)',
+  'vercel-rotated-secret-0123456789abcdef-01', '55000');
+select t.wall('only malformed rows left: the plaintext-stored secret -> 55000 too',
+  'unknown-wall-secret-0123456789abcdef-3', '55000');
+
+-- 2b.7 none at all -> 55000, whatever the decoys hold
+delete from vault.secrets where starts_with(name, 'wall_feed_secret');
+select t.wall('no wall_feed_secret% row, decoys still there -> 55000',
+  'decoy-wall-secret-0123456789abcdef-99', '55000');
+select t.wall('no wall_feed_secret% row: a null secret -> 55000 as well (configuration first)',
+  null, '55000');
+
+-- 2b.8 the 32-character floor holds for every row, not only the first
+do $$ begin
+  perform vault.create_secret(t.h('short-secret-31-chars-xxxxxxxxx'), 'wall_feed_secret_minipc', 'short secret');
+  perform vault.create_secret(t.h('vercel-wall-secret-0123456789abcdef-01'), 'wall_feed_secret', 'long enough');
+end $$;
+select t.wall('a 31-char secret whose hash matches the second row -> 28P01',
+  'short-secret-31-chars-xxxxxxxxx', '28P01');
+select t.wall('...while the long one is accepted',
+  'vercel-wall-secret-0123456789abcdef-01');
+
+rollback;
+
+select t.wall('Vault is back to one row: the rotated secret from 2 works',
+  'rotated-wall-secret-0123456789abcdef');
+select t.eq('Vault is back to one row: wall_feed_secret% rows',
+  (select count(*) from vault.secrets where starts_with(name, 'wall_feed_secret')), 1::bigint);
 
 
 -- ===== 3. the payload at pinned clocks ========================================

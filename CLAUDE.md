@@ -118,10 +118,17 @@ as a station _count_, not `total_super` fuel volume), areas, pace/ETA, today's
 contract in ViperGroup `docs/FEEDS.md` §2; change it there first. Only
 `service_role` may execute it; the logic is `wall_snapshot_at(p_now)` and the
 secret check `wall_feed_check`, both executable by nobody. Vault holds the
-secret's sha256 (hex) as `wall_feed_secret` — set and rotated with SQL, never in
-a migration:
+sha256 (hex) of each wall deployment's secret, one row per caller, and **any row
+named `wall_feed_secret%` works** (`wall_feed_check` accepts a secret whose hash
+equals any of them): `wall_feed_secret` for the Vercel deployment,
+`wall_feed_secret_minipc` for the Mini PC. A row whose value is not 64 hex
+digits is ignored (none valid left → 55000); other names (`other_secret`,
+`my_wall_feed_secret`) never count. Set and rotated with SQL, never in a
+migration:
 `select vault.create_secret(encode(sha256(convert_to('<secret>','UTF8')),'hex'),'wall_feed_secret','sha256 of the ViperGroup wall secret');`
-/ `vault.update_secret(<id>, <new hash>)`. Edge function `wall-feed` is deployed
+/ `select vault.create_secret(encode(sha256(convert_to('<secret>','UTF8')),'hex'),'wall_feed_secret_minipc','sha256 of the Mini PC wall secret');`
+/ `vault.update_secret(<id>, <new hash>)`; revoke one by deleting its row.
+Edge function `wall-feed` is deployed
 with `verify_jwt = false` (`--no-verify-jwt`): the `x-wall-secret` header is the
 authentication; 28P01 → 401, 55000 → 503, anything else → 500.
 

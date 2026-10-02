@@ -19,17 +19,25 @@
 --   header and calls `wall_snapshot(p_secret)` with the service-role key it is
 --   injected with. Only service_role may execute it.
 --
--- The secret itself is never stored. Vault holds its sha256 (hex) under the
--- name `wall_feed_secret`; it is created and rotated with SQL, never in a
--- migration:
+-- The secret itself is never stored. Vault holds its sha256 (hex), one row per
+-- caller, under any name that starts with `wall_feed_secret`; a secret is
+-- accepted when its hash equals ANY of those rows, so each deployment of the
+-- wall has its own secret and can be rotated or revoked without touching the
+-- others:
+--   wall_feed_secret          the Vercel deployment
+--   wall_feed_secret_minipc   the Mini PC that drives the TV
+-- Rows are created and rotated with SQL, never in a migration:
 --   select vault.create_secret(encode(sha256(convert_to('<secret>','UTF8')),'hex'),
 --                              'wall_feed_secret', 'sha256 of the ViperGroup wall secret');
---   select vault.update_secret((select id from vault.secrets where name = 'wall_feed_secret'),
+--   select vault.create_secret(encode(sha256(convert_to('<secret>','UTF8')),'hex'),
+--                              'wall_feed_secret_minipc', 'sha256 of the Mini PC wall secret');
+--   select vault.update_secret((select id from vault.secrets where name = 'wall_feed_secret_minipc'),
 --                              encode(sha256(convert_to('<new secret>','UTF8')),'hex'));
+-- Revoke one with `delete from vault.secrets where name = '<that name>'`.
 --
 -- Error codes are the edge function's whole interface to this file:
 --   28P01 (invalid_password)              bad or short secret    -> 401
---   55000 (object_not_in_prerequisite_state) no hash in Vault    -> 503
+--   55000 (object_not_in_prerequisite_state) no usable hash in Vault -> 503
 --
 -- What counts:
 --   * a completion is a STANDING one — `stations.is_done` with `completed_at`,
@@ -53,13 +61,27 @@
 
 
 -- -----------------------------------------------------------------------------
--- 1. wall_feed_check — compare the caller's secret to the hash in Vault
+-- 1. wall_feed_check — compare the caller's secret to the hashes in Vault
+--
+-- Every Vault row whose name STARTS WITH `wall_feed_secret` is a candidate
+-- (`wall_feed_secret`, `wall_feed_secret_minipc`, ...). `starts_with()` is a
+-- literal prefix test: a LIKE pattern would read the underscores as wildcards
+-- and let `wallXfeedXsecret` in. A name that merely contains the prefix
+-- (`my_wall_feed_secret`), an unrelated name (`other_secret`) and a row with no
+-- name are never candidates, whatever they hold.
+--
+-- A candidate counts only if its value is a sha256 in hex (64 hex digits,
+-- case and surrounding spaces ignored). Anything else — a typo, a half-pasted
+-- hash, the plaintext secret stored by mistake — is skipped, so one bad row
+-- cannot lock out the others, and a plaintext secret can never authenticate.
+-- No usable row at all -> 55000 (not configured), before the caller's secret is
+-- even looked at; the one that misses every hash -> 28P01.
 --
 -- Built-in sha256() (PG 11+), not pgcrypto's digest(): nothing here needs an
 -- extension. A length floor of 32 rejects a short or empty secret before it is
 -- hashed, so a weak secret cannot be configured by accident on the wall side.
--- Comparing two digests leaks nothing useful through timing — the caller does
--- not control the stored digest's prefix.
+-- Comparing digests leaks nothing useful through timing — the caller does not
+-- control the stored digests' prefixes.
 -- -----------------------------------------------------------------------------
 create or replace function public.wall_feed_check(p_secret text)
 returns void
@@ -69,27 +91,27 @@ security definer
 set search_path = public
 as $$
 declare
-  v_hash text;
+  v_hashes text[];
 begin
-  select decrypted_secret
-    into v_hash
+  select array_agg(lower(btrim(decrypted_secret)))
+    into v_hashes
     from vault.decrypted_secrets
-   where name = 'wall_feed_secret'
-   limit 1;
+   where starts_with(name, 'wall_feed_secret')
+     and lower(btrim(decrypted_secret)) ~ '^[0-9a-f]{64}$';
 
-  if v_hash is null then
+  if v_hashes is null then
     raise exception 'wall feed not configured' using errcode = '55000';
   end if;
 
   if coalesce(length(p_secret), 0) < 32
-     or encode(sha256(convert_to(p_secret, 'UTF8')), 'hex') <> lower(btrim(v_hash)) then
+     or (encode(sha256(convert_to(p_secret, 'UTF8')), 'hex') = any (v_hashes)) is not true then
     raise exception 'bad wall secret' using errcode = '28P01';
   end if;
 end;
 $$;
 
 comment on function public.wall_feed_check(text) is
-  'Raises 28P01 unless sha256(p_secret) matches Vault secret "wall_feed_secret", 55000 when that secret is missing. Internal to wall_snapshot.';
+  'Raises 28P01 unless sha256(p_secret) equals the hex hash held by ANY Vault secret whose name starts with "wall_feed_secret" (one per wall deployment); 55000 when there is no such secret with a valid 64-hex hash. Internal to wall_snapshot.';
 
 
 -- -----------------------------------------------------------------------------
@@ -353,7 +375,7 @@ end;
 $$;
 
 comment on function public.wall_snapshot(text) is
-  'ViperGroup wall feed. service_role only (edge function wall-feed). Raises 28P01 on a bad secret, 55000 when Vault has no wall_feed_secret.';
+  'ViperGroup wall feed. service_role only (edge function wall-feed). Raises 28P01 on a bad secret, 55000 when Vault has no wall_feed_secret% hash.';
 
 
 -- -----------------------------------------------------------------------------

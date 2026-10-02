@@ -223,24 +223,38 @@ update public.profiles set is_admin = true where id = auth.uid();
   (`wall_snapshot_at`) ובדיקת הסוד (`wall_feed_check`) חסומות לכולם — קריאה
   ישירה הייתה עוקפת את הסוד.
 - **הסוד:** המסך שולח אותו בכותרת `x-wall-secret`, לפחות 32 תווים. ב-Vault
-  נשמר רק ה-sha256 שלו (hex) בשם `wall_feed_secret` — לעולם לא הסוד עצמו,
-  ולעולם לא במיגרציה. הגדרה והחלפה ב-SQL Editor:
+  נשמר רק ה-sha256 שלו (hex) — לעולם לא הסוד עצמו, ולעולם לא במיגרציה. לכל
+  פריסה של מסך הקיר יש שורה משלה, וסוד מתקבל אם ה-hash שלו שווה ל**אחת**
+  מהשורות. כל שורה ששמה מתחיל ב-`wall_feed_secret` נחשבת:
+  `wall_feed_secret` לפריסה ב-Vercel, `wall_feed_secret_minipc` ל-Mini PC.
+  ככה אפשר להחליף או לבטל סוד של פריסה אחת בלי לגעת בשנייה. שורה שהערך שלה אינו
+  64 ספרות hex מתעלמים ממנה (ואם לא נשארה אף שורה תקינה — 503); שמות אחרים
+  (`other_secret`, `my_wall_feed_secret`) לא נחשבים לעולם. הגדרה והחלפה ב-SQL
+  Editor:
 
   ```sql
-  -- הגדרה ראשונה
+  -- הגדרה ראשונה: Vercel
   select vault.create_secret(
     encode(sha256(convert_to('<secret>', 'UTF8')), 'hex'),
     'wall_feed_secret', 'sha256 of the ViperGroup wall secret');
 
-  -- החלפה
+  -- הגדרה ראשונה: Mini PC
+  select vault.create_secret(
+    encode(sha256(convert_to('<secret>', 'UTF8')), 'hex'),
+    'wall_feed_secret_minipc', 'sha256 of the Mini PC wall secret');
+
+  -- החלפה (כאן ב-Mini PC; השורה של Vercel לא מושפעת)
   select vault.update_secret(
-    (select id from vault.secrets where name = 'wall_feed_secret'),
+    (select id from vault.secrets where name = 'wall_feed_secret_minipc'),
     encode(sha256(convert_to('<new secret>', 'UTF8')), 'hex'));
+
+  -- ביטול פריסה
+  delete from vault.secrets where name = 'wall_feed_secret_minipc';
   ```
 
   אפשר גם לחשב את ה-hash מקומית (`printf '%s' "$SECRET" | sha256sum`) ולהדביק
   רק אותו — כך הסוד לא עובר בבסיס הנתונים כלל. אחרי החלפה מעדכנים את
-  `SONOL_FEED_SECRET` בפרויקט ViperGroup.
+  `SONOL_FEED_SECRET` בפריסה המתאימה של ViperGroup.
 
 - **פריסה:** `npx supabase functions deploy wall-feed --no-verify-jwt` — לקורא
   אין JWT של Supabase, הסוד הוא האימות. תשובות: 401 סוד חסר או שגוי, 503 אין
