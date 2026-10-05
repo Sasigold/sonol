@@ -26,12 +26,19 @@ if (!url || !anonKey) {
   );
 }
 
+/**
+ * Where supabase-js keeps the session in `localStorage`. Exported because
+ * `AuthProvider` has to read it back itself when a refresh fails on a dead
+ * connection — see `readStoredSession`.
+ */
+export const AUTH_STORAGE_KEY = 'sonol-auth';
+
 export const supabase = createClient<Database>(url, anonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storageKey: 'sonol-auth',
+    storageKey: AUTH_STORAGE_KEY,
   },
 });
 
