@@ -1,15 +1,49 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Hoisted so the mock factory can close over it (vi.mock is hoisted above imports).
-const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
-vi.mock('./supabase', () => ({ supabase: { rpc } }));
+const { rpc, getSession } = vi.hoisted(() => ({ rpc: vi.fn(), getSession: vi.fn() }));
+vi.mock('./supabase', () => ({
+  supabase: { rpc, auth: { getSession } },
+  AUTH_STORAGE_KEY: 'sonol-auth',
+}));
 
 import { toggleStationRpc } from './rpc';
+import { SessionUnavailableError, classifyMutationError } from './errors';
+
+const STORED_SESSION = {
+  access_token: 'expired-access',
+  refresh_token: 'refresh',
+  expires_at: 1,
+  user: { id: 'user-1' },
+};
 
 describe('toggleStationRpc', () => {
   beforeEach(() => {
     rpc.mockReset();
     rpc.mockResolvedValue({ error: null });
+    getSession.mockReset();
+    getSession.mockResolvedValue({ data: { session: STORED_SESSION }, error: null });
+    localStorage.clear();
+  });
+
+  it('holds the write when the stored session cannot be refreshed', async () => {
+    // The refresh failed on the network: supabase-js answers null, but the
+    // session is still in storage. Sending now would go out on the anon key.
+    localStorage.setItem('sonol-auth', JSON.stringify(STORED_SESSION));
+    getSession.mockResolvedValue({ data: { session: null }, error: new Error('Load failed') });
+
+    const attempt = toggleStationRpc('station-1', true);
+
+    await expect(attempt).rejects.toBeInstanceOf(SessionUnavailableError);
+    expect(rpc).not.toHaveBeenCalled();
+    // …and the queue keeps it rather than dropping it as a refused write.
+    expect(classifyMutationError(await attempt.catch((error: unknown) => error))).toBe('offline');
+  });
+
+  it('still sends when there is no stored session at all', async () => {
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    await toggleStationRpc('station-1', true);
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
   it('completes, defaulting the queued flag to false', async () => {

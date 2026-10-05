@@ -1,4 +1,6 @@
 import { supabase } from './supabase';
+import { SessionUnavailableError } from './errors';
+import { readStoredSession } from './session-cache';
 import type { CapturedPosition } from '@/hooks/useGeolocationCapture';
 
 /**
@@ -26,6 +28,14 @@ export async function toggleStationRpc(
   queued = false,
   coords: CapturedPosition | null = null,
 ): Promise<void> {
+  // A session that is stored but cannot be refreshed right now (expired token,
+  // dead connection) would send this on the anon key and be refused for good.
+  // Hold it instead — the caller queues it, and the queue keeps it, exactly as
+  // if the connection were down. No stored session at all is a real sign-out
+  // and is left to fail as before.
+  const { data } = await supabase.auth.getSession();
+  if (!data.session && readStoredSession()) throw new SessionUnavailableError();
+
   const { error } = done
     ? await supabase.rpc('complete_station', {
         p_station_id: stationId,

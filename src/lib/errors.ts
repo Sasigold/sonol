@@ -15,6 +15,20 @@ export class EdgeFunctionError extends Error {
 }
 
 /**
+ * A write held back because the session cannot be used right now: the access
+ * token has expired and the refresh could not reach the server, so the request
+ * would go out on the anon key. The grants refuse that with a permission error
+ * the offline queue counts as permanent — it would DROP a tap the worker
+ * really made. Raised before sending, and classified as offline instead.
+ */
+export class SessionUnavailableError extends Error {
+  constructor() {
+    super('session unavailable');
+    this.name = 'SessionUnavailableError';
+  }
+}
+
+/**
  * Supabase error → Hebrew (brief §9.6).
  *
  * Defect 19 of the original app was English error text surfacing inside a
@@ -94,6 +108,8 @@ export function toHebrewError(error: unknown): string {
   // match Hebrew and would flatten every specific reason to the generic
   // sentence.
   if (error instanceof EdgeFunctionError) return error.message;
+
+  if (error instanceof SessionUnavailableError) return errors.offline;
 
   // Offline is checked first: a fetch failure carries no useful code, and the
   // brief wants the "will sync later" wording rather than a generic failure.
@@ -184,6 +200,7 @@ export async function ensureFunctionOk(response: {
 export type MutationErrorKind = 'offline' | 'permanent' | 'unknown';
 
 export function classifyMutationError(error: unknown): MutationErrorKind {
+  if (error instanceof SessionUnavailableError) return 'offline';
   const message = hasStringProp(error, 'message') ? error.message : '';
   if (isOfflineLike(message)) return 'offline';
   if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline';

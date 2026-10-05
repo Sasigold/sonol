@@ -31,10 +31,13 @@ export default defineConfig({
         // The app is a one-handed list on a phone in a vehicle. Landscape is
         // never the intended posture.
         orientation: 'portrait',
-        // Both taken from the light token layer in globals.css, so the splash
-        // screen matches the app instead of flashing white.
+        // Android draws its launch screen from `background_color` + the icon.
+        // Brand blue, not the page background: the launch screen is the app
+        // icon's artwork on its own colour, and it hands over to the matching
+        // boot splash in index.html (src/lib/splash.ts) instead of a white
+        // frame.
         theme_color: '#1E3A8A',
-        background_color: '#F8FAFC',
+        background_color: '#1E3A8A',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
@@ -59,6 +62,10 @@ export default defineConfig({
           // The plugin already precaches the manifest's icons itself; matching
           // them here as well lists each one twice.
           '**/pwa-*.png',
+          // The iOS launch screens (~70 kB each, a dozen of them). iOS fetches
+          // the ONE matching the device when the app is added to the Home
+          // Screen; precaching them would put every size on every phone.
+          '**/splash/*.png',
           // The completion-location map (Leaflet) is admin-only and needs a
           // network for its tiles anyway, so precaching its ~150 kB chunk onto
           // every field worker's device buys nothing. It loads on demand when an

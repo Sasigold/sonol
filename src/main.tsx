@@ -11,6 +11,7 @@ import '@fontsource-variable/heebo';
 import './styles/globals.css';
 import { router } from './router';
 import { disableZoomGestures } from './lib/no-zoom';
+import { hideSplash, SPLASH_MAX_MS } from './lib/splash';
 
 // Before first paint, not in an effect: an effect would leave a window in
 // which a pinch still zooms, and StrictMode would attach it twice.
@@ -55,3 +56,7 @@ createRoot(container).render(
     </DirectionProvider>
   </StrictMode>,
 );
+
+// The splash normally lifts as soon as the session is known (SplashRelease).
+// This is the backstop for a boot that never gets that far.
+window.setTimeout(hideSplash, SPLASH_MAX_MS);

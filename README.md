@@ -32,22 +32,22 @@ npm run dev
 
 ## פקודות
 
-| פקודה                | מה היא עושה                                         |
-| -------------------- | --------------------------------------------------- |
-| `npm run dev`        | שרת פיתוח                                           |
-| `npm run build`      | בדיקת טיפוסים + בילד לפרודקשן                       |
-| `npm run preview`    | תצוגה מקדימה של הבילד                               |
-| `npm run typecheck`  | בדיקת טיפוסים בלבד                                  |
-| `npm run lint`       | ESLint                                              |
-| `npm run lint:rtl`   | איתור מאפייני CSS פיזיים שלא מתהפכים ב-RTL          |
-| `npm run lint:scale` | נכשל על מחלקות שמחוץ לסולם הטוקנים                  |
-| `npm run test`       | Vitest                                              |
-| `npm run coverage`   | כיסוי בדיקות                                        |
-| `npm run format`     | Prettier                                            |
-| `npm run gen:types`  | יצירה מחדש של `src/types/database.types.ts` מהסכימה |
-| `npm run gen:icons`  | יצירה מחדש של אייקוני ה-PWA מתוך `favicon.svg`      |
-| `npm run verify`     | כל הבדיקות יחד — להריץ לפני כל commit               |
-| `npm run test:e2e`   | Playwright — **כותב לבסיס הנתונים**, ראו למטה       |
+| פקודה                | מה היא עושה                                              |
+| -------------------- | -------------------------------------------------------- |
+| `npm run dev`        | שרת פיתוח                                                |
+| `npm run build`      | בדיקת טיפוסים + בילד לפרודקשן                            |
+| `npm run preview`    | תצוגה מקדימה של הבילד                                    |
+| `npm run typecheck`  | בדיקת טיפוסים בלבד                                       |
+| `npm run lint`       | ESLint                                                   |
+| `npm run lint:rtl`   | איתור מאפייני CSS פיזיים שלא מתהפכים ב-RTL               |
+| `npm run lint:scale` | נכשל על מחלקות שמחוץ לסולם הטוקנים                       |
+| `npm run test`       | Vitest                                                   |
+| `npm run coverage`   | כיסוי בדיקות                                             |
+| `npm run format`     | Prettier                                                 |
+| `npm run gen:types`  | יצירה מחדש של `src/types/database.types.ts` מהסכימה      |
+| `npm run gen:icons`  | יצירה מחדש של אייקוני ה-PWA ומסכי הפתיחה מתוך `logo.svg` |
+| `npm run verify`     | כל הבדיקות יחד — להריץ לפני כל commit                    |
+| `npm run test:e2e`   | Playwright — **כותב לבסיס הנתונים**, ראו למטה            |
 
 ---
 

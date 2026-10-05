@@ -16,6 +16,7 @@ import { NotFoundPage } from '@/pages/not-found/NotFoundPage';
 import { ErrorState } from '@/components/common/ErrorState';
 import { PageLoadingSkeleton } from '@/components/common/LoadingSkeleton';
 import { UpdatePrompt } from '@/components/common/UpdatePrompt';
+import { SplashRelease } from '@/components/common/SplashRelease';
 
 /**
  * The admin screens load on demand.
@@ -67,6 +68,7 @@ function Lazy({ children }: { children: ReactNode }) {
 function RootLayout() {
   return (
     <AuthProvider>
+      <SplashRelease />
       <Outlet />
       <Toaster />
       <UpdatePrompt />
