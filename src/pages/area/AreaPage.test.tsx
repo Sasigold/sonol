@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type * as RouterModule from 'react-router-dom';
 import type * as StationsModule from '@/hooks/useStations';
-import { actions, dialogs } from '@/lib/copy';
+import { actions, dialogs, labels } from '@/lib/copy';
 
 /**
  * Three not-done stations in one area. a and b have no coordinates; c carries
@@ -138,5 +138,45 @@ describe('AreaPage distance-from-station warning', () => {
 
     expect(screen.getByText(dialogs.confirmComplete.body('תחנה א'))).toBeInTheDocument();
     expect(screen.queryByText(dialogs.farStation.title)).not.toBeInTheDocument();
+  });
+});
+
+describe('AreaPage layout', () => {
+  it('lifts the next station into the full card and lists the rest as rows', () => {
+    renderPage();
+
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+    // The next station is the first item and carries the next-station caption.
+    expect(within(items[0]!).getByText(labels.nextStation)).toBeInTheDocument();
+    expect(within(items[0]!).getByRole('heading')).toHaveTextContent('תחנה א');
+    expect(screen.getByText(labels.upNext(2))).toBeInTheDocument();
+  });
+
+  it('shows the area progress over every station', () => {
+    renderPage();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '3');
+  });
+
+  it('counts each filter chip', () => {
+    renderPage();
+    expect(screen.getByRole('tab', { name: labels.tabNotDone(3) })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: labels.tabSuper(0) })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: labels.tabEnvelope(0) })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: labels.tabDone(0) })).toBeInTheDocument();
+  });
+
+  it('opens the search on demand and clears it on close', () => {
+    renderPage();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+    const toggle = screen.getByRole('button', { name: actions.openSearch });
+    fireEvent.click(toggle);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'ב' } });
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+
+    fireEvent.click(toggle);
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
   });
 });

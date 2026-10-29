@@ -22,8 +22,10 @@ test.describe('worker round', () => {
 
     await expect(page).toHaveURL(/\/areas\//);
 
+    // The filter chips run לא בוצע, סופר, מעטפה, בוצע — outstanding first,
+    // done last.
     const notDoneTab = page.getByRole('tab').first();
-    const doneTab = page.getByRole('tab').nth(1);
+    const doneTab = page.getByRole('tab').last();
 
     function countIn(text: string | null): number {
       // The tab labels carry their count in parentheses: "לא בוצע (12)".
@@ -34,7 +36,7 @@ test.describe('worker round', () => {
     const doneBefore = countIn(await doneTab.textContent());
     expect(notDoneBefore).toBeGreaterThan(0);
 
-    // The first outstanding card, and the station's name so it can be found
+    // The first outstanding station — the next-station card — and its name so it can be found
     // again on the other tab.
     const card = page.getByRole('listitem').first();
     const stationName = (await card.getByRole('heading').textContent())?.trim() ?? '';

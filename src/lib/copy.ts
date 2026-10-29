@@ -15,6 +15,7 @@ export const nav = {
   signIn: 'התחברות',
   forgotPasswordLink: 'שכחת סיסמה?',
   back: 'חזרה',
+  backToAreas: 'חזרה לאזורים',
   forgotPasswordTitle: 'שכחת את הסיסמה',
   addStation: 'הוספת תחנה',
   editStation: 'עריכת תחנה',
@@ -129,6 +130,9 @@ export const actions = {
   searchStations: 'חיפוש לפי שם או מספר תחנה',
   clearSearch: 'ניקוי החיפוש',
   exportHistory: 'ייצוא היסטוריה ל-CSV',
+  /* The stations screen: the search toggle and a row's expand control. */
+  openSearch: 'חיפוש תחנה',
+  stationDetails: 'פרטי התחנה',
 } as const;
 
 /* 9.4 Status & labels -------------------------------------------------------- */
@@ -181,6 +185,15 @@ export const labels = {
    * the bidi algorithm), while this Hebrew prefix stays in the RTL flow.
    */
   workSpan: 'עבודה בפועל:',
+  /*
+   * The stations screen. The next station is lifted into its own card; the
+   * filter chips beside לא בוצע / בוצע count only what is still outstanding,
+   * because a סופר or an envelope that was already delivered needs no attention.
+   */
+  nextStation: 'התחנה הבאה',
+  upNext: (n: number) => `בהמשך (${n})`,
+  tabSuper: (n: number) => `סופר (${n})`,
+  tabEnvelope: (n: number) => `מעטפה (${n})`,
 } as const;
 
 /* 9.5 Dialogs ---------------------------------------------------------------- */
@@ -311,6 +324,12 @@ export const states = {
     body: 'הוסף תחנה כדי להתחיל',
   },
   noCompletedStations: 'עדיין לא בוצעו תחנות באזור זה',
+  allStationsDone: {
+    title: 'כל התחנות באזור בוצעו',
+    body: 'אפשר לחזור לרשימת האזורים ולהמשיך לאזור הבא',
+  },
+  noSuperLeft: 'לא נשארו תחנות סופר לביצוע',
+  noEnvelopeLeft: 'לא נשארו תחנות עם מעטפה לביצוע',
   noUsersFound: 'לא נמצאו משתמשים',
   loadError: {
     title: 'אירעה שגיאה בטעינת הנתונים',

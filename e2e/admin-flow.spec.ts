@@ -66,7 +66,7 @@ test.describe('admin round management', () => {
     const areaAfter = page.getByRole('link').filter({ hasText: labels.remainingShort }).first();
     await areaAfter.click();
 
-    const doneTab = page.getByRole('tab').nth(1);
+    const doneTab = page.getByRole('tab').last();
     await expect(doneTab).toHaveText(labels.tabDone(0));
 
     // --- and the admin is still the admin ---------------------------------
