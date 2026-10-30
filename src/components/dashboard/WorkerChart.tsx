@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { EmptyState } from '@/components/common/EmptyState';
 import { fields, labels, states } from '@/lib/copy';
@@ -47,6 +48,7 @@ function WorkerTick(props: { x?: number; y?: number; payload?: { value?: string 
 }
 
 export function WorkerChart({ stats }: { stats: UserStat[] }) {
+  const fillId = `bars-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const data = stats
     .filter((stat) => (stat.stations_completed_now ?? 0) > 0)
     .map((stat) => ({
@@ -67,6 +69,15 @@ export function WorkerChart({ stats }: { stats: UserStat[] }) {
       <div style={{ blockSize: height }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, bottom: 4, left: 8 }}>
+            {/* Still ONE hue — a light-to-full ramp of the primary along the
+                bar's length, so the bar reads as charging toward its value.
+                Bars grow right-to-left, so the gradient runs that way too. */}
+            <defs>
+              <linearGradient id={fillId} x1="1" y1="0" x2="0" y2="0">
+                <stop offset="0" stopColor="var(--primary)" stopOpacity="0.55" />
+                <stop offset="1" stopColor="var(--primary)" />
+              </linearGradient>
+            </defs>
             {/* `reversed` + the category axis on the right makes the bars grow
                 right-to-left, which is the reading direction of this app. */}
             <XAxis type="number" reversed hide domain={[0, 'dataMax']} />
@@ -97,7 +108,7 @@ export function WorkerChart({ stats }: { stats: UserStat[] }) {
                 is available on hover and in the table. */}
             <Bar
               dataKey="value"
-              fill="var(--primary)"
+              fill={`url(#${fillId})`}
               // Rounded only at the data end; the baseline end stays square.
               radius={[4, 0, 0, 4]}
               barSize={16}

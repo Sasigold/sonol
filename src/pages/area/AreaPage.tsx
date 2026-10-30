@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowRight, ArrowUpDown, PackageCheck, Search, SearchX, X } from 'lucide-react';
+import { ArrowRight, ArrowUpDown, PackageCheck, Search, SearchX, Trophy, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +11,8 @@ import { ErrorState } from '@/components/common/ErrorState';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { StationCard } from '@/components/stations/StationCard';
 import { FarStationDialog } from '@/components/stations/FarStationDialog';
+import { CompletionFx } from '@/components/fx/CompletionFx';
+import { ProgressBar } from '@/components/common/ProgressBar';
 import { useAuth } from '@/contexts/auth-context';
 import { useMyAreas } from '@/hooks/useAreas';
 import {
@@ -28,7 +30,7 @@ import { useGeolocationCapture, type CapturedPosition } from '@/hooks/useGeoloca
 import { navigateToStation } from '@/lib/waze';
 import { distanceMeters, isFarFromStation } from '@/lib/geo';
 import { toHebrewError } from '@/lib/errors';
-import { actions, dialogs, labels, nav, states, toasts } from '@/lib/copy';
+import { actions, celebrate, dialogs, labels, nav, states, toasts } from '@/lib/copy';
 
 type PendingDialog =
   | {
@@ -46,6 +48,14 @@ type PendingDialog =
   | { kind: 'uncomplete'; station: Station }
   | { kind: 'navigate'; station: Station }
   | null;
+
+/** One play of the completion effect. `id` restarts it on a quick second tap. */
+interface Celebration {
+  id: number;
+  stationName: string;
+  doneBefore: number;
+  total: number;
+}
 
 /**
  * How far the worker may be from a station before completing it raises a
@@ -75,6 +85,9 @@ export function AreaPage() {
   useRealtimeStations(areaId);
 
   const [dialog, setDialog] = useState<PendingDialog>(null);
+  const [celebration, setCelebration] = useState<Celebration | null>(null);
+  // Outlives the overlay, so a screen reader hears it however short the effect.
+  const [announcement, setAnnouncement] = useState('');
 
   const [search, setSearch] = useState('');
 
@@ -126,11 +139,33 @@ export function AreaPage() {
     // the offline path — the queued record replays with it.
     const coords = dialog.kind === 'complete' ? dialog.coords : null;
 
+    // A completion is celebrated at the tap, not when the server answers: on a
+    // weak signal the answer can be seconds away, or queued for later, and the
+    // card has already moved to the done tab optimistically. A refusal still
+    // rolls the card back and says so in a toast.
+    if (done) {
+      const total = stations?.length ?? 0;
+      const doneAfter = Math.min(doneTotal + 1, total);
+      setCelebration({
+        id: Date.now(),
+        stationName: dialog.station.name,
+        doneBefore: doneTotal,
+        total,
+      });
+      setAnnouncement(
+        doneAfter >= total
+          ? celebrate.announceArea(areaName)
+          : celebrate.announce(dialog.station.name, doneAfter, total),
+      );
+    }
+
     toggleStation.mutate(
       { station: dialog.station, done, coords },
       {
         onSuccess: () => {
-          toast.success(done ? toasts.stationCompleted : toasts.stationUncompleted);
+          // The completion already had its moment (CompletionFx); a toast on
+          // top would say the same thing twice.
+          if (!done) toast.success(toasts.stationUncompleted);
         },
         onError: (error) => {
           toast.error(toHebrewError(error));
@@ -213,7 +248,11 @@ export function AreaPage() {
         <div className="flex shrink-0 items-center gap-2">
           {/* The area's progress, NOT the search result's — a filtered list
               must not make it look like stations went away. */}
-          <span className="text-small text-text-muted ltr-isolate">
+          {/* Keyed on the count, so it pops each time a station is done. */}
+          <span
+            key={doneTotal}
+            className="text-body-strong text-neon-strong ltr-isolate motion-safe:animate-pop inline-block tabular-nums"
+          >
             {doneTotal}/{stations?.length ?? 0}
           </span>
           <Button
@@ -227,6 +266,10 @@ export function AreaPage() {
           </Button>
         </div>
       </header>
+
+      {stations && stations.length > 0 ? (
+        <ProgressBar done={doneTotal} total={stations.length} label={areaName} />
+      ) : null}
 
       {isPending ? (
         <div className="flex flex-col gap-3" aria-busy="true">
@@ -323,10 +366,27 @@ export function AreaPage() {
                 </TabsList>
 
                 <TabsContent value="notDone">
-                  {notDone.length === 0 ? (
+                  {notDone.length === 0 && doneTotal === stations.length ? (
+                    // The whole area is done — say so, and offer the way on.
+                    <EmptyState
+                      icon={Trophy}
+                      title={celebrate.areaDone}
+                      description={celebrate.areaDoneBody(areaName)}
+                      action={
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            navigate('/');
+                          }}
+                        >
+                          {celebrate.backToAreas}
+                        </Button>
+                      }
+                    />
+                  ) : notDone.length === 0 ? (
                     <EmptyState icon={PackageCheck} title={labels.tabNotDone(0)} />
                   ) : (
-                    <ul className="flex flex-col gap-3">
+                    <ul className="fx-stagger flex flex-col gap-3">
                       {notDone.map((station) => (
                         <li key={station.id}>
                           <StationCard
@@ -345,7 +405,7 @@ export function AreaPage() {
                   {done.length === 0 ? (
                     <EmptyState icon={PackageCheck} title={states.noCompletedStations} />
                   ) : (
-                    <ul className="flex flex-col gap-3">
+                    <ul className="fx-stagger flex flex-col gap-3">
                       {done.map((station) => (
                         <li key={station.id}>
                           <StationCard
@@ -394,6 +454,23 @@ export function AreaPage() {
         pending={toggleStation.isPending}
         onConfirm={confirmDialog}
       />
+
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
+
+      {celebration ? (
+        <CompletionFx
+          key={celebration.id}
+          stationName={celebration.stationName}
+          areaName={areaName}
+          doneBefore={celebration.doneBefore}
+          total={celebration.total}
+          onFinished={() => {
+            setCelebration(null);
+          }}
+        />
+      ) : null}
 
       {/* Far from the station: the big, deliberately-different warning. */}
       <FarStationDialog

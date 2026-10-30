@@ -2,7 +2,7 @@ import { MapPinned } from 'lucide-react';
 import { AreaCard } from '@/components/areas/AreaCard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
-import { ProgressBar } from '@/components/common/ProgressBar';
+import { FuelGauge } from '@/components/common/FuelGauge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/auth-context';
 import { useMyAreas } from '@/hooks/useAreas';
@@ -25,7 +25,12 @@ export function HomePage() {
       <header className="flex flex-col gap-1">
         <h1 className="text-h1 text-text">
           {greeting()}
-          {name ? `, ${name}` : ''}
+          {name ? (
+            <>
+              {', '}
+              <span className="fx-text-gradient">{name}</span>
+            </>
+          ) : null}
         </h1>
       </header>
 
@@ -50,12 +55,11 @@ export function HomePage() {
           />
         ) : (
           <>
-            <section className="bg-surface border-border shadow-card flex flex-col gap-3 rounded-lg border p-4">
-              <p className="text-body-strong text-text">{labels.roundProgress(done, total)}</p>
-              <ProgressBar done={done} total={total} label={labels.roundProgress(done, total)} />
+            <section className="fx-panel bg-surface border-border shadow-card relative overflow-hidden rounded-lg border p-4">
+              <FuelGauge done={done} total={total} caption={labels.roundProgress(done, total)} />
             </section>
 
-            <ul className="flex flex-col gap-3">
+            <ul className="fx-stagger flex flex-col gap-3">
               {areas.map((area) => (
                 <li key={area.area_id}>
                   <AreaCard area={area} />
@@ -73,7 +77,7 @@ function HomeSkeleton() {
   return (
     <div className="flex flex-col gap-3" aria-busy="true">
       <span className="sr-only">{states.loading}</span>
-      <Skeleton className="h-12 w-full rounded-lg" />
+      <Skeleton className="aspect-[2/1] w-full rounded-lg" />
       {[0, 1, 2].map((row) => (
         <Skeleton key={row} className="h-12 w-full rounded-lg" />
       ))}

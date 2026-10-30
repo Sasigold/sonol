@@ -366,6 +366,25 @@ export const toasts = {
   userPasswordReset: 'הסיסמה של המשתמש עודכנה',
 } as const;
 
+/* Completion feedback (CompletionFx) — authored with the redesign; §9 has no
+   wording for it. The area's progress line reuses `labels.roundProgress`. */
+export const celebrate = {
+  stationDone: 'בוצע!',
+  areaDone: 'האזור הושלם!',
+  areaDoneBody: (area: string) => `כל התחנות באזור ${area} בוצעו. כל הכבוד!`,
+  /**
+   * What a screen reader hears in place of the animation, through a live region
+   * that outlives the overlay.
+   */
+  announce: (station: string, done: number, total: number) =>
+    `${station} סומנה כבוצעה. הושלמו ${done} מתוך ${total} תחנות באזור.`,
+  announceArea: (area: string) => `האזור ${area} הושלם. כל התחנות בוצעו.`,
+  /** The not-done tab once nothing is left in it. */
+  backToAreas: 'חזרה לאזורים',
+  /** Shown on an area card at 100%. */
+  areaComplete: 'הושלם',
+} as const;
+
 /* 9.9 Offline ---------------------------------------------------------------- */
 export const offline = {
   noConnection: 'אין חיבור לאינטרנט',

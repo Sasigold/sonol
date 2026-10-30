@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -44,6 +45,7 @@ function DayTick(props: { x?: number; y?: number; payload?: { value?: string } }
 }
 
 export function DailyChart({ stats }: { stats: RoundDailyStat[] }) {
+  const fillId = `bars-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const data = stats
     .filter((stat) => stat.day !== null)
     .map((stat) => ({
@@ -60,6 +62,13 @@ export function DailyChart({ stats }: { stats: RoundDailyStat[] }) {
       <div style={{ blockSize: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
+            {/* One hue, rising: full primary at the top of each bar. */}
+            <defs>
+              <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="var(--primary)" />
+                <stop offset="1" stopColor="var(--primary)" stopOpacity="0.45" />
+              </linearGradient>
+            </defs>
             {/* `reversed` puts the oldest day on the right, so the days read
                 right-to-left like the rest of the app. */}
             <XAxis
@@ -87,7 +96,7 @@ export function DailyChart({ stats }: { stats: RoundDailyStat[] }) {
               }
               formatter={(value) => [String(value ?? 0), daily.seriesLabel]}
             />
-            <Bar dataKey="value" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+            <Bar dataKey="value" fill={`url(#${fillId})`} radius={[4, 4, 0, 0]} maxBarSize={40} />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -18,9 +18,17 @@ export function Toaster() {
       // 6s: this is read one-handed, in a moving vehicle, in sunlight.
       duration={6000}
       toastOptions={{
+        // Inline, because sonner's own (unlayered) stylesheet outranks a
+        // Tailwind utility for these three. Still opaque tokens (defect 17).
+        style: {
+          background: 'var(--surface)',
+          borderColor: 'var(--border)',
+          color: 'var(--text)',
+          boxShadow: 'var(--shadow-overlay-value)',
+        },
         classNames: {
           toast:
-            'bg-surface text-text border border-border shadow-overlay rounded-md text-body gap-3',
+            'fx-panel bg-surface text-text border border-border shadow-overlay rounded-md text-body gap-3',
           description: 'text-text-muted text-small',
           actionButton: 'bg-primary text-primary-foreground',
           cancelButton: 'bg-surface-alt text-text',

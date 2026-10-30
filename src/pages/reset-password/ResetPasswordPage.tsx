@@ -58,8 +58,8 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="bg-brand-800 flex min-h-dvh items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="fx-auth-backdrop flex min-h-dvh items-center justify-center p-4">
+      <Card className="motion-safe:animate-enter dark:bg-glass w-full max-w-md dark:backdrop-blur-xl">
         <CardContent className="flex flex-col gap-6 p-6">
           <h1 className="text-h1 text-text">{nav.resetPasswordTitle}</h1>
 

@@ -36,14 +36,17 @@ export function BlockedPage() {
   if (authorized) return <Navigate to="/" replace />;
 
   return (
-    <div className="bg-brand-800 flex min-h-dvh flex-col items-center justify-center gap-6 p-6 text-center">
-      <span className="bg-brand-700 text-text-inverse flex size-12 items-center justify-center rounded-full">
+    // The backdrop is the night-ops field in BOTH themes, so the text on it is
+    // pinned white — `text-inverse` flips to near-black in dark mode and
+    // vanished against it.
+    <div className="fx-auth-backdrop flex min-h-dvh flex-col items-center justify-center gap-6 p-6 text-center">
+      <span className="bg-danger/20 ring-danger/50 text-danger flex size-12 items-center justify-center rounded-full ring-2">
         <Lock className="size-6" aria-hidden />
       </span>
 
       <div className="flex flex-col gap-2">
-        <h1 className="text-display text-text-inverse">{blocked.title}</h1>
-        <p className="text-body text-text-inverse/80">{blocked.body}</p>
+        <h1 className="text-display text-white">{blocked.title}</h1>
+        <p className="text-body text-white/80">{blocked.body}</p>
       </div>
 
       <Button

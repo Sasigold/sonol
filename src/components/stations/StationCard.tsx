@@ -2,7 +2,9 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import {
   Check,
+  CheckCircle2,
   Fuel,
+  Hash,
   Mail,
   MapPin,
   MoreVertical,
@@ -94,7 +96,11 @@ export function StationCard({
   return (
     <article
       className={cn(
-        'bg-surface border-border shadow-card flex flex-col gap-3 rounded-lg border p-4',
+        'fx-panel bg-surface border-border shadow-card relative flex flex-col gap-3 rounded-lg border p-4 transition',
+        // The next stop is lit: a neon edge and halo the eye finds before it
+        // has read a word. The הבא badge says the same thing in text.
+        isNext && 'border-neon/60 shadow-glow',
+        station.is_done && 'border-success/40',
         // Delivering רגיל to a סופר station is a wasted drive back. The fuel
         // type therefore gets a whole-card cue, not just a chip: a thick
         // inline-start edge that survives a thumb-flick down the list, when
@@ -108,7 +114,22 @@ export function StationCard({
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            {isNext ? <Badge variant="brand">{labels.next}</Badge> : null}
+            {isNext ? (
+              <Badge variant="neon">
+                {/* A beacon — it pings because this is where to go now. */}
+                <span className="relative flex size-2" aria-hidden>
+                  <span className="bg-neon motion-safe:animate-ping-soft absolute inset-0 rounded-full" />
+                  <span className="bg-neon relative size-2 rounded-full" />
+                </span>
+                {labels.next}
+              </Badge>
+            ) : null}
+            {station.is_done ? (
+              <Badge variant="success">
+                <CheckCircle2 className="size-4" aria-hidden />
+                {labels.done}
+              </Badge>
+            ) : null}
             <h3 className="text-h3 text-text">{station.name}</h3>
           </div>
 
@@ -128,6 +149,12 @@ export function StationCard({
             <Badge variant={isSuper ? 'danger' : 'neutral'} size={isSuper ? 'lg' : 'sm'}>
               <Fuel className={isSuper ? 'size-5' : 'size-4'} aria-hidden />
               {isSuper ? fields.fuelSuper : fields.fuelRegular}
+            </Badge>
+            {/* The station's place in the round — what the search box matches. */}
+            <Badge variant="neutral">
+              <Hash className="size-4" aria-hidden />
+              <span className="sr-only">{fields.stationNumber}</span>
+              <bdi className="tabular-nums">{station.sort_number}</bdi>
             </Badge>
           </div>
 
@@ -305,7 +332,7 @@ function Quantity({
     <div
       className={cn(
         'flex flex-1 flex-col-reverse items-center gap-1 rounded-md border px-3 py-2',
-        emphasis ? 'border-warning bg-warning-bg' : 'border-border bg-surface-alt',
+        emphasis ? 'border-warning bg-warning-bg shadow-card' : 'border-border bg-surface-alt',
       )}
     >
       <dt
@@ -317,7 +344,12 @@ function Quantity({
         <Icon className="size-4" aria-hidden />
         {label}
       </dt>
-      <dd className={cn('text-h1 tabular-nums', emphasis ? 'text-warning' : 'text-text')}>
+      <dd
+        className={cn(
+          'text-display font-extrabold tracking-tight tabular-nums',
+          emphasis ? 'text-warning' : 'text-text',
+        )}
+      >
         {value}
       </dd>
     </div>

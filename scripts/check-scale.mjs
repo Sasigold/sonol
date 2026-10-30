@@ -111,7 +111,7 @@ if (dead.length > 0) {
   }
   console.error(
     `\n${dead.length} dead class(es). Spacing is 0/px/1/2/3/4/5/6/8/10/12, radii sm/md/lg/full,\n` +
-      'shadows card/raised/overlay, type display/h1/h2/h3/body/body-strong/small/caption.',
+      'shadows card/raised/overlay/glow, type display/h1/h2/h3/body/body-strong/small/caption.',
   );
   process.exit(1);
 }

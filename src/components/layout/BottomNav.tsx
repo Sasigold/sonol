@@ -32,17 +32,20 @@ export function BottomNav() {
         // exactly one viewport tall and does not scroll, so it cannot move.
         // `shrink-0` matters — as a flex item it would otherwise be squeezed by
         // a tall content area before the content area started scrolling.
-        className="bg-surface border-border shrink-0 border-t pt-2 pb-[env(safe-area-inset-bottom)]"
+        className="fx-glass border-border relative shrink-0 border-t pt-1 pb-[env(safe-area-inset-bottom)]"
       >
+        <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-(image:--grad-edge)" />
         <ul className="mx-auto flex w-full max-w-3xl items-stretch">
           <NavItem to="/" icon={Home} label={nav.home} end />
           <NavItem to="/dashboard" icon={BarChart3} label={nav.dashboard} />
           {/* The prominent centre action (§8.9). */}
-          <li className="flex flex-1 items-center justify-center">
+          <li className="flex flex-1 items-start justify-center">
+            {/* Lifted half out of the bar, ringed in the page colour so it
+                reads as floating over it. */}
             <NavLink
               to="/stations/new"
               aria-label={nav.add}
-              className="bg-primary text-primary-foreground shadow-raised flex size-12 items-center justify-center rounded-full"
+              className="bg-primary text-primary-foreground shadow-glow ring-bg -mt-4 flex size-12 items-center justify-center rounded-full bg-(image:--grad-primary) ring-4 transition active:scale-95"
             >
               <Plus className="size-6" aria-hidden />
             </NavLink>
@@ -54,9 +57,11 @@ export function BottomNav() {
               onClick={() => {
                 setConfirmOpen(true);
               }}
-              className="text-text-muted hover:text-text flex h-12 w-full flex-col items-center justify-center gap-1"
+              className="text-text-muted hover:text-text flex min-h-12 w-full flex-col items-center justify-center gap-1 py-1"
             >
-              <LogOut className="size-5 rtl:-scale-x-100" aria-hidden />
+              <span className="flex h-8 w-12 items-center justify-center">
+                <LogOut className="size-5 rtl:-scale-x-100" aria-hidden />
+              </span>
               <span className="text-caption">{nav.signOut}</span>
             </button>
           </li>
@@ -97,13 +102,26 @@ function NavItem({
         end={end}
         className={({ isActive }) =>
           cn(
-            'flex h-12 w-full flex-col items-center justify-center gap-1 transition-colors',
-            isActive ? 'text-primary' : 'text-text-muted hover:text-text',
+            'flex min-h-12 w-full flex-col items-center justify-center gap-1 py-1 transition-colors',
+            isActive ? 'text-neon-strong' : 'text-text-muted hover:text-text',
           )
         }
       >
-        <Icon className="size-5" aria-hidden />
-        <span className="text-caption">{label}</span>
+        {({ isActive }) => (
+          <>
+            {/* The active destination sits in a lit pill — the label and the
+                colour change say it too, so the glow is never alone. */}
+            <span
+              className={cn(
+                'flex h-8 w-12 items-center justify-center rounded-full transition',
+                isActive && 'bg-neon-bg shadow-glow',
+              )}
+            >
+              <Icon className="size-5" aria-hidden />
+            </span>
+            <span className={cn('text-caption', isActive && 'font-bold')}>{label}</span>
+          </>
+        )}
       </NavLink>
     </li>
   );

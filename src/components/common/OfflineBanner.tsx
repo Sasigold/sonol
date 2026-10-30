@@ -24,10 +24,15 @@ export function OfflineBanner() {
       role="status"
       // `shrink-0`: a row of the non-scrolling shell, so it must not be
       // compressed by a tall content area.
-      className="bg-warning-bg text-text border-border flex shrink-0 items-center justify-center gap-2 border-b p-3"
+      className="bg-warning-bg text-text border-border relative z-10 flex shrink-0 items-center justify-center gap-2 border-b p-3"
     >
       {online ? (
-        <CloudUpload className="text-warning size-5 shrink-0" aria-hidden />
+        // Pulses only while the queue is actually draining — it says
+        // "working", and stops the moment there is nothing left to send.
+        <CloudUpload
+          className="text-warning size-5 shrink-0 motion-safe:animate-pulse"
+          aria-hidden
+        />
       ) : (
         <WifiOff className="text-warning size-5 shrink-0" aria-hidden />
       )}

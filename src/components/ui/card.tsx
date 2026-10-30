@@ -1,11 +1,14 @@
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
-/** Cards use radius `lg` (16px) per the design system. */
+/** Cards use radius `lg` (16px) per the design system, with the lit top edge. */
 export function Card({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
-      className={cn('bg-surface border-border shadow-card rounded-lg border', className)}
+      className={cn(
+        'fx-panel bg-surface border-border shadow-card relative rounded-lg border',
+        className,
+      )}
       {...props}
     />
   );

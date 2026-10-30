@@ -76,7 +76,7 @@ export function FarStationDialog({
               onConfirm();
             }}
             disabled={pending}
-            className="bg-danger text-text-inverse hover:opacity-90"
+            variant="destructive"
           >
             {pending ? <Loader2 className="size-5 animate-spin" aria-hidden /> : null}
             {dialogs.farStation.confirm}
