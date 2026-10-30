@@ -6,15 +6,11 @@ import { cn } from '@/lib/utils';
  * the shape of what is coming, which reads faster in bright sunlight than an
  * indeterminate spinner.
  *
- * `animate-pulse` is suppressed by the `prefers-reduced-motion` rule in the
- * base layer.
+ * The sweep (`fx-shimmer`) travels right-to-left, the reading direction, and
+ * is frozen by the `prefers-reduced-motion` rule in the base layer.
  */
 export function Skeleton({ className, ...props }: ComponentProps<'div'>) {
   return (
-    <div
-      aria-hidden
-      className={cn('bg-surface-alt animate-pulse rounded-md', className)}
-      {...props}
-    />
+    <div aria-hidden className={cn('bg-surface-alt fx-shimmer rounded-md', className)} {...props} />
   );
 }

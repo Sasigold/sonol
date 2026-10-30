@@ -27,12 +27,12 @@ export function DialogContent({
 }: ComponentProps<typeof DialogPrimitive.Content> & { closeLabel?: string }) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
+      <DialogPrimitive.Overlay className="data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out fixed inset-0 z-50 bg-black/55 backdrop-blur-sm" />
       <DialogPrimitive.Content
         // Centred via inset + margin auto rather than `start-1/2 -translate`,
         // which would be wrong under RTL.
         className={cn(
-          'bg-surface border-border shadow-overlay fixed inset-x-0 top-1/2 z-50 mx-auto flex w-full max-w-lg -translate-y-1/2 flex-col gap-4 rounded-lg border p-6',
+          'fx-panel bg-surface border-border shadow-overlay data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out fixed inset-x-0 top-1/2 z-50 mx-auto flex w-[calc(100%-2rem)] max-w-lg -translate-y-1/2 flex-col gap-4 rounded-lg border p-6',
           className,
         )}
         {...props}

@@ -10,7 +10,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { actions } from '@/lib/copy';
-import { cn } from '@/lib/utils';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -60,7 +59,7 @@ export function ConfirmDialog({
               onConfirm();
             }}
             disabled={pending}
-            className={cn(destructive && 'bg-danger text-text-inverse hover:opacity-90')}
+            variant={destructive ? 'destructive' : 'primary'}
           >
             {pending ? <Loader2 className="size-5 animate-spin" aria-hidden /> : null}
             {confirmLabel}

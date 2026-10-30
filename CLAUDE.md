@@ -152,10 +152,14 @@ however, break the build on their own — see the warning below.
 
 - Spacing: only 4 8 12 16 20 24 32 40 48
 - Radii: `sm` 8 / `md` 12 / `lg` 16 (cards) / `full`
-- Shadows: exactly `card`, `raised`, `overlay`
+- Shadows: exactly `card`, `raised`, `overlay`, plus `glow` — the neon halo for
+  the ONE element on a screen that should pull the eye (the next station, the
+  FAB, a focused field). Not a general elevation.
 - Type: `display h1 h2 h3 body body-strong small caption`, nothing below 13px
-- Motion: 150ms state / 250ms entrance, `cubic-bezier(0.4,0,0.2,1)`, and respect
-  `prefers-reduced-motion`. No animation that does nothing.
+- Motion: 150ms state / 250ms entrance / 600ms data (a gauge or bar moving to a
+  new value), `--ease-standard` / `--ease-emphasized`, and respect
+  `prefers-reduced-motion`. No animation that does nothing. The one longer
+  piece is `CompletionFx` (below).
 
 **Colour never carries meaning alone** — every coloured badge also has an icon
 or a text label. Touch targets ≥ 48×48. Body text ≥ 16px. Contrast AA.
@@ -180,6 +184,40 @@ never its class strings.
 
 Dark mode uses `--brand-400` / `--brand-300`, not `--brand-600`: `#3B5BDB` on
 `#0F172A` is ~2.7:1 and fails AA.
+
+### 5b. The futuristic layer
+
+The look is "night ops": deep navy, an electric `neon` cyan accent, `fuel`
+amber from the logo's drop, frosted chrome, a lit hairline on every panel.
+All of it lives in `globals.css`; components only name it.
+
+- **Tokens.** `neon` (glows, rings, icons) / `neon-strong` (neon _text_ — holds
+  AA) / `neon-bg`; `fuel` (decoration only, never text); `glass` (translucent
+  surface). Gradients are CSS variables (`--grad-primary`, `--grad-progress`,
+  `--grad-edge`) used as `bg-(image:--grad-primary)`. `--grad-progress` is
+  written for RTL — a bar grows from the right, so its left end is the tip.
+- **Utilities** (`@utility`, so variants work): `fx-backdrop` (aurora + grid,
+  the AppShell root), `fx-auth-backdrop` (signed-out screens, dark in both
+  themes — text on it is `text-white`, not `text-inverse`), `fx-glass`,
+  `fx-panel` (lit top edge; sets NO position — pair it with `relative`),
+  `fx-text-gradient`, `fx-shimmer` (skeletons), `fx-stagger` (list entrance).
+  The backdrop is static on purpose: an ambient animation costs battery all day.
+- **A gradient is a background IMAGE.** `cn(buttonVariants(), 'bg-danger')`
+  leaves the primary gradient painted over the red. Ask for the `destructive`
+  variant — `AlertDialogAction` takes `variant` for exactly this.
+- **No transform may outlive an entrance animation.** `animate-enter` fills
+  `backwards` only. A transform left on an ancestor becomes the containing block
+  of every `position: fixed` descendant; overlays are portalled to `<body>`
+  regardless.
+- **`CompletionFx`** (`src/components/fx/`) is the feedback for marking a
+  station done: a fuel drop falls into a tank that fills to the area's NEW
+  level, the gauge ring sweeps to match, a check is stamped; the area's last
+  station gets a trophy and a burst. It plays at the confirm (optimistic — the
+  card has already moved), never blocks (`pointer-events-none`, unmounts
+  itself), buzzes on Android, and is `aria-hidden` — `AreaPage` announces the
+  same facts through a live region that outlives it. Its choreography is in
+  `globals.css`; every keyframe is written so its END state is the meaningful
+  one, because reduced motion collapses each animation onto its last frame.
 
 ---
 

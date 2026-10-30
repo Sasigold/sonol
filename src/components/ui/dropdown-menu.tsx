@@ -39,6 +39,8 @@ export function DropdownMenuContent({
           // min-w-max, not a fixed step: the spacing scale stops at 48px, and
           // sizing to the longest item is the right behaviour anyway.
           'bg-surface border-border shadow-overlay z-50 min-w-max overflow-hidden rounded-md border p-1',
+          // Grows out of its trigger rather than appearing from nowhere.
+          'data-[state=open]:animate-dialog-in origin-(--radix-dropdown-menu-content-transform-origin)',
           className,
         )}
         {...props}

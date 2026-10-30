@@ -17,6 +17,8 @@ const badgeVariants = cva('inline-flex items-center rounded-full whitespace-nowr
       info: 'bg-info-bg text-info',
       success: 'bg-success-bg text-success',
       brand: 'bg-brand-100 text-brand-800',
+      /** The electric accent — what the eye should go to next. */
+      neon: 'bg-neon-bg text-neon-strong ring-1 ring-neon/40 ring-inset',
     },
     size: {
       /** The default. A quiet annotation beside something else. */

@@ -15,16 +15,26 @@ import { cn } from '@/lib/utils';
  * There is deliberately NO size below 48px: the constraint is enforced by not
  * offering the option.
  */
+/*
+ * The press is felt, not just seen: every variant sinks 2% under the thumb.
+ * In a vehicle the tap itself is uncertain, and the scale is the
+ * acknowledgement that it landed — it is state feedback, not decoration.
+ *
+ * `primary` paints a gradient over its flat colour. A gradient is a background
+ * IMAGE, which a later `bg-danger` would not remove — so a destructive button
+ * must ask for the `destructive` variant, never override `primary`'s colour.
+ */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-md text-body-strong whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 rounded-md text-body-strong whitespace-nowrap transition select-none active:scale-98 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+        primary:
+          'bg-primary bg-(image:--grad-primary) text-primary-foreground shadow-raised hover:bg-(image:--grad-primary-hover)',
         secondary: 'bg-surface-alt text-text hover:bg-border',
-        outline: 'border border-border bg-surface text-text hover:bg-surface-alt',
+        outline: 'border border-border bg-surface text-text hover:border-neon hover:bg-surface-alt',
         ghost: 'text-text hover:bg-surface-alt',
-        destructive: 'bg-danger text-text-inverse hover:opacity-90',
+        destructive: 'bg-danger text-text-inverse shadow-raised hover:opacity-90',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {

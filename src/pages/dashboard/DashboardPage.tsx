@@ -25,6 +25,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { StatTile } from '@/components/dashboard/StatTile';
+import { FuelGauge } from '@/components/common/FuelGauge';
+import { AnimatedNumber } from '@/components/fx/AnimatedNumber';
 import { AreaTable } from '@/components/dashboard/AreaTable';
 import { WorkerChart } from '@/components/dashboard/WorkerChart';
 import { DailyChart } from '@/components/dashboard/DailyChart';
@@ -62,7 +64,6 @@ export function DashboardPage() {
   const done = global.data?.done_count ?? 0;
   const remaining = global.data?.remaining_count ?? 0;
   const total = global.data?.station_count ?? 0;
-  const percent = total > 0 ? Math.round((done / total) * 100) : 0;
 
   function exportCsv() {
     if (!areas.data) return;
@@ -159,11 +160,12 @@ export function DashboardPage() {
                 className="flex-1"
               />
             </div>
-            <p className="text-body text-text-muted">{labels.roundProgress(done, total)}</p>
-            <p className="text-h2 text-text tabular-nums">{percent}%</p>
+            <div className="fx-panel bg-surface border-border shadow-card relative rounded-lg border p-4">
+              <FuelGauge done={done} total={total} caption={labels.roundProgress(done, total)} />
+            </div>
           </section>
 
-          <section className="bg-surface border-border shadow-card flex flex-col gap-3 rounded-lg border p-4">
+          <section className="fx-panel bg-surface border-border shadow-card relative flex flex-col gap-3 rounded-lg border p-4">
             <h2 className="text-h2 text-text">{fields.total}</h2>
             <dl className="grid grid-cols-3 gap-3">
               <Total label={labels.totalRegular} value={global.data.total_regular ?? 0} />
@@ -276,7 +278,9 @@ function Total({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex flex-col">
       <dt className="text-caption text-text-muted">{label}</dt>
-      <dd className="text-h2 text-text tabular-nums">{value}</dd>
+      <dd className="text-h2 text-text">
+        <AnimatedNumber value={value} />
+      </dd>
     </div>
   );
 }

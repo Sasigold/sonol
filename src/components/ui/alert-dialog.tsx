@@ -17,12 +17,12 @@ export function AlertDialogContent({
 }: ComponentProps<typeof AlertDialogPrimitive.Content>) {
   return (
     <AlertDialogPrimitive.Portal>
-      <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
+      <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out fixed inset-0 z-50 bg-black/55 backdrop-blur-sm" />
       <AlertDialogPrimitive.Content
         // `start-1/2 -translate-x-1/2` would be wrong under RTL; centring via
         // inset + margin auto is direction-agnostic.
         className={cn(
-          'bg-surface border-border shadow-overlay fixed inset-x-0 top-1/2 z-50 mx-auto flex w-full max-w-md -translate-y-1/2 flex-col gap-4 rounded-lg border p-6',
+          'fx-panel bg-surface border-border shadow-overlay data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out fixed inset-x-0 top-1/2 z-50 mx-auto flex w-[calc(100%-2rem)] max-w-md -translate-y-1/2 flex-col gap-4 rounded-lg border p-6',
           className,
         )}
         {...props}
@@ -65,11 +65,23 @@ export function AlertDialogDescription({
   );
 }
 
+/**
+ * `variant`, not a colour override: the primary variant paints a gradient
+ * image that a `bg-danger` class would leave showing on top.
+ */
 export function AlertDialogAction({
   className,
+  variant = 'primary',
   ...props
-}: ComponentProps<typeof AlertDialogPrimitive.Action>) {
-  return <AlertDialogPrimitive.Action className={cn(buttonVariants(), className)} {...props} />;
+}: ComponentProps<typeof AlertDialogPrimitive.Action> & {
+  variant?: 'primary' | 'destructive';
+}) {
+  return (
+    <AlertDialogPrimitive.Action
+      className={cn(buttonVariants({ variant }), className)}
+      {...props}
+    />
+  );
 }
 
 export function AlertDialogCancel({

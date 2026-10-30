@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type * as RouterModule from 'react-router-dom';
 import type * as StationsModule from '@/hooks/useStations';
-import { actions, dialogs } from '@/lib/copy';
+import { actions, celebrate, dialogs } from '@/lib/copy';
 
 /**
  * Three not-done stations in one area. a and b have no coordinates; c carries
@@ -138,5 +138,30 @@ describe('AreaPage distance-from-station warning', () => {
 
     expect(screen.getByText(dialogs.confirmComplete.body('תחנה א'))).toBeInTheDocument();
     expect(screen.queryByText(dialogs.farStation.title)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Completion feedback (CompletionFx). It plays at the confirm — not when the
+ * server answers — and what it shows is also said through a live region, since
+ * the overlay itself is aria-hidden and gone in under two seconds.
+ */
+describe('AreaPage completion feedback', () => {
+  it('plays the effect and announces the area progress on confirm', () => {
+    renderPage();
+
+    fireEvent.click(screen.getAllByRole('button', { name: actions.markDone })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: actions.confirm }));
+
+    // 0 of 3 done before, so this completion makes it 1 of 3.
+    expect(screen.getByRole('status')).toHaveTextContent(celebrate.announce('תחנה א', 1, 3));
+    // The overlay is portalled to <body>, outside the page's own tree.
+    expect(document.body.querySelector('.fx-complete')).not.toBeNull();
+    expect(screen.getByText(celebrate.stationDone)).toBeInTheDocument();
+  });
+
+  it('does not play the effect for an undo', () => {
+    renderPage();
+    expect(document.body.querySelector('.fx-complete')).toBeNull();
   });
 });

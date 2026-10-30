@@ -33,32 +33,43 @@
   --brand-600: #3b5bdb;
   --brand-100: #e8edfb;
 
-  /* Dark-mode brand tints. NOT in the brief: #3B5BDB on #0F172A is ~2.7:1,
-     which fails AA. These two are the accessible substitutes and are used
-     only inside the `.dark` block below. */
-  --brand-400: #7e96ea;
-  --brand-300: #a5b6f2;
+  /* Dark-mode brand tints. NOT in the brief: #3B5BDB on the dark background
+     fails AA. These two are the accessible substitutes and are used only
+     inside the `.dark` block below — tuned electric for the night-ops look. */
+  --brand-400: #5b9dff;
+  --brand-300: #8ab8ff;
 
-  /* Surface */
-  --bg: #f8fafc;
+  /* Surface — a cool, faintly blue-grey field so the white panels lift. */
+  --bg: #eef2f9;
   --surface: #ffffff;
-  --surface-alt: #f1f5f9;
-  --border: #e2e8f0;
+  --surface-alt: #f2f5fb;
+  --border: #d9e1ee;
 
   /* Text */
-  --text: #0f172a;
-  --text-muted: #64748b;
+  --text: #0b1324;
+  --text-muted: #55627a;
   --text-inverse: #ffffff;
 
   /* Semantic */
   --success: #059669;
   --success-bg: #ecfdf5;
-  --warning: #d97706;
-  --warning-bg: #fffbeb;
+  --warning: #b45309;
+  --warning-bg: #fff8e6;
   --danger: #dc2626;
   --danger-bg: #fef2f2;
   --info: #2563eb;
   --info-bg: #eff6ff;
+
+  /* Neon — the electric cyan of the futuristic layer. `--neon` is for
+     glows, rings and icons; text in the neon colour uses `--neon-strong`,
+     which holds AA on white (#0E7490 is 5.4:1). */
+  --neon: #0891b2;
+  --neon-strong: #0e7490;
+  --neon-bg: #e6f8fc;
+
+  /* Fuel — the amber of the drop in the logo. Decoration only, never text. */
+  --fuel: #f59e0b;
+  --fuel-soft: #fcd34d;
 
   /* Roles — what components actually reference */
   --primary: var(--brand-800);
@@ -66,11 +77,28 @@
   --primary-fg: var(--text-inverse);
   --ring: var(--brand-600);
 
-  /* Elevation — exactly three (brief §6.1) */
-  --shadow-card-value: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.08);
-  --shadow-raised-value: 0 2px 4px -1px rgb(15 23 42 / 0.06), 0 4px 8px -2px rgb(15 23 42 / 0.1);
+  /* Gradients. Directions are symmetric or vertical where it matters, so
+     nothing here needs mirroring under RTL. Progress is the exception and is
+     written for RTL: a bar grows from the right, so its LEFT end is the tip. */
+  --grad-primary: linear-gradient(160deg, #3157cf 0%, #1e3a8a 55%, #16296b 100%);
+  --grad-primary-hover: linear-gradient(160deg, #3b63e0 0%, #2547a8 55%, #1e3a8a 100%);
+  --grad-progress: linear-gradient(90deg, #06b6d4 0%, #10b981 100%);
+  --grad-fuel: linear-gradient(180deg, var(--fuel-soft) 0%, var(--fuel) 100%);
+  --grad-edge: linear-gradient(90deg, transparent 0%, rgb(8 145 178 / 0.55) 50%, transparent 100%);
+
+  /* The page backdrop: two soft aurora pools and a faint blueprint grid. */
+  --aurora-1: rgb(59 91 219 / 0.16);
+  --aurora-2: rgb(6 182 212 / 0.12);
+  --grid-line: rgb(30 58 138 / 0.055);
+  --glass: rgb(255 255 255 / 0.72);
+
+  /* Elevation — three surfaces plus one glow (see CLAUDE.md §5) */
+  --shadow-card-value: 0 1px 2px 0 rgb(15 23 42 / 0.05), 0 8px 24px -14px rgb(30 58 138 / 0.22);
+  --shadow-raised-value:
+    0 2px 6px -1px rgb(30 58 138 / 0.14), 0 12px 28px -10px rgb(37 99 235 / 0.32);
   --shadow-overlay-value:
-    0 8px 16px -4px rgb(15 23 42 / 0.12), 0 16px 32px -8px rgb(15 23 42 / 0.16);
+    0 12px 24px -8px rgb(15 23 42 / 0.18), 0 32px 64px -16px rgb(30 58 138 / 0.3);
+  --shadow-glow-value: 0 0 0 1px rgb(8 145 178 / 0.35), 0 8px 28px -6px rgb(8 145 178 / 0.38);
 }
 
 /* -----------------------------------------------------------------------------
@@ -80,34 +108,56 @@
 .dark {
   color-scheme: dark;
 
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface-alt: #334155;
-  --border: #334155;
+  /* Deep-space navy, not neutral grey: the glows read against it. */
+  --bg: #050914;
+  --surface: #0c1324;
+  --surface-alt: #141d34;
+  --border: #22304f;
 
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
-  --text-inverse: #0f172a;
+  --text: #e7edf9;
+  --text-muted: #93a2bf;
+  --text-inverse: #050914;
 
   --success: #34d399;
   --success-bg: #052e22;
   --warning: #fbbf24;
-  --warning-bg: #3a2a08;
+  --warning-bg: #33250a;
   --danger: #f87171;
   --danger-bg: #3a1414;
   --info: #60a5fa;
   --info-bg: #10233f;
 
+  --neon: #22d3ee;
+  --neon-strong: #67e8f9;
+  --neon-bg: #062a33;
+
   /* the accessible tints, not #3B5BDB */
   --primary: var(--brand-400);
   --primary-hover: var(--brand-300);
-  --primary-fg: #0f172a;
+  --primary-fg: #04101f;
   --ring: var(--brand-400);
 
-  /* dark UIs need heavier shadows to read at all */
-  --shadow-card-value: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 0 rgb(0 0 0 / 0.4);
-  --shadow-raised-value: 0 2px 4px -1px rgb(0 0 0 / 0.4), 0 4px 8px -2px rgb(0 0 0 / 0.5);
-  --shadow-overlay-value: 0 8px 16px -4px rgb(0 0 0 / 0.5), 0 16px 32px -8px rgb(0 0 0 / 0.6);
+  /* Dark text on the whole run of this gradient stays above 4.5:1. */
+  --grad-primary: linear-gradient(160deg, #7cb4ff 0%, #4d8bff 50%, #2fb8e6 100%);
+  --grad-primary-hover: linear-gradient(160deg, #96c3ff 0%, #6aa0ff 50%, #45c8f0 100%);
+  --grad-progress: linear-gradient(90deg, #22d3ee 0%, #34d399 100%);
+  --grad-edge: linear-gradient(90deg, transparent 0%, rgb(34 211 238 / 0.6) 50%, transparent 100%);
+
+  --aurora-1: rgb(61 123 255 / 0.2);
+  --aurora-2: rgb(34 211 238 / 0.12);
+  --grid-line: rgb(91 157 255 / 0.065);
+  --glass: rgb(12 19 36 / 0.72);
+
+  /* dark UIs need heavier shadows to read at all — and a faint blue halo so a
+     raised element glows rather than just darkening what is under it */
+  --shadow-card-value: inset 0 1px 0 0 rgb(255 255 255 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.75);
+  --shadow-raised-value:
+    0 0 0 1px rgb(91 157 255 / 0.14), 0 12px 32px -12px rgb(0 0 0 / 0.85),
+    0 0 28px -10px rgb(91 157 255 / 0.45);
+  --shadow-overlay-value:
+    0 0 0 1px rgb(91 157 255 / 0.12), 0 24px 64px -12px rgb(0 0 0 / 0.9),
+    0 0 48px -16px rgb(34 211 238 / 0.35);
+  --shadow-glow-value: 0 0 0 1px rgb(34 211 238 / 0.45), 0 0 32px -6px rgb(34 211 238 / 0.5);
 }
 
 /* =============================================================================
@@ -140,6 +190,11 @@
   --color-danger-bg: var(--danger-bg);
   --color-info: var(--info);
   --color-info-bg: var(--info-bg);
+  --color-neon: var(--neon);
+  --color-neon-strong: var(--neon-strong);
+  --color-neon-bg: var(--neon-bg);
+  --color-fuel: var(--fuel);
+  --color-glass: var(--glass);
 
   /* shadcn/ui landing pad — every primitive we pull in during phase 2 speaks
      these names. Aliased onto our tokens so `shadcn add` drops in unedited. */
@@ -258,14 +313,74 @@
   --shadow-card: var(--shadow-card-value);
   --shadow-raised: var(--shadow-raised-value);
   --shadow-overlay: var(--shadow-overlay-value);
+  /* The fourth, added with the futuristic redesign: an accent halo for the one
+     element on a screen that should pull the eye (the next station, the
+     primary FAB, a focused field). Not a general-purpose elevation. */
+  --shadow-glow: var(--shadow-glow-value);
   --inset-shadow-*: initial;
   --drop-shadow-*: initial;
 
-  /* ---- Motion (brief §6.1) ---------------------------------------------- */
+  /* ---- Motion (brief §6.1, extended by the redesign) --------------------
+     150ms for a state change, 250ms for an entrance — as before. Two longer
+     durations were added with the redesign, each tied to a meaning:
+     `data` (600ms) for a gauge or bar moving to a new value, and the
+     completion effect (CompletionFx), which is feedback for the one action
+     the app exists for. Everything respects prefers-reduced-motion. */
   --ease-*: initial;
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   --default-transition-duration: 150ms;
+
+  --animate-enter: fx-enter 250ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-pop: fx-pop 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-overlay-in: fx-fade-in 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-overlay-out: fx-fade-out 150ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-dialog-in: fx-dialog-in 250ms cubic-bezier(0.2, 0, 0, 1);
+  --animate-dialog-out: fx-dialog-out 150ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-ping-soft: fx-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes fx-enter {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+  @keyframes fx-pop {
+    40% {
+      transform: scale(1.22);
+    }
+  }
+  @keyframes fx-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fx-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes fx-dialog-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94);
+    }
+  }
+  @keyframes fx-dialog-out {
+    to {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+  @keyframes fx-ping {
+    70%,
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
 }
 
 /* =============================================================================
@@ -337,8 +452,468 @@
     ::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
+      /* A staggered entrance would otherwise hold each row invisible for its
+         delay and then snap it in — worse than no animation at all. */
+      animation-delay: 0ms !important;
       transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* =============================================================================
+   Futuristic layer — utilities
+   ========================================================================== */
+
+/*
+  The page field: two aurora pools and a blueprint grid that fades out down the
+  screen, painted once behind everything. Static on purpose: an ambient
+  animation would cost battery on a phone that is on all day, and would move
+  nothing the worker needs to see. The panels on top are opaque, so none of
+  this ever sits under text.
+*/
+@utility fx-backdrop {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(56rem 26rem at 92% -6%, var(--aurora-1), transparent 70%),
+    radial-gradient(40rem 22rem at 0% 0%, var(--aurora-2), transparent 70%);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(180deg, #000 0%, transparent 75%);
+  }
+}
+
+/* The signed-out screens: always the night-ops field, whatever the theme. */
+@utility fx-auth-backdrop {
+  position: relative;
+  isolation: isolate;
+  background-color: #050914;
+  background-image:
+    radial-gradient(40rem 30rem at 85% 0%, rgb(61 123 255 / 0.35), transparent 70%),
+    radial-gradient(36rem 24rem at 10% 100%, rgb(34 211 238 / 0.2), transparent 70%),
+    linear-gradient(180deg, #0b1838 0%, #050914 100%);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgb(91 157 255 / 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(91 157 255 / 0.09) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(ellipse at 50% 40%, #000 0%, transparent 75%);
+  }
+}
+
+/* Frosted chrome: the header, the bottom bar, dialogs and toasts. */
+@utility fx-glass {
+  background-color: var(--glass);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
+/* A panel's top edge catches the light: a hairline that fades in from both
+   corners. Symmetric, so it needs no mirroring under RTL. Sets no `position`
+   of its own — pair it with `relative` (or the element's existing `fixed`),
+   so it can never override a dialog's positioning. */
+@utility fx-panel {
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 16px;
+    top: -1px;
+    height: 1px;
+    pointer-events: none;
+    background: var(--grad-edge);
+  }
+}
+
+/* Headline gradient text. Both ends of each theme's gradient hold AA against
+   that theme's background, so the gradient never costs legibility. */
+@utility fx-text-gradient {
+  background-image: var(--grad-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Skeleton sweep. The band travels right-to-left, the reading direction. */
+@utility fx-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    var(--shimmer, rgb(255 255 255 / 0.6)) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: fx-shimmer 1.4s linear infinite;
+}
+
+/* Lists arrive row by row. Capped at eight steps so a long list is not still
+   assembling itself a second later. */
+@utility fx-stagger {
+  & > * {
+    animation: fx-enter 250ms var(--ease-emphasized) backwards;
+  }
+  & > :nth-child(2) {
+    animation-delay: 40ms;
+  }
+  & > :nth-child(3) {
+    animation-delay: 80ms;
+  }
+  & > :nth-child(4) {
+    animation-delay: 120ms;
+  }
+  & > :nth-child(5) {
+    animation-delay: 160ms;
+  }
+  & > :nth-child(6) {
+    animation-delay: 200ms;
+  }
+  & > :nth-child(7) {
+    animation-delay: 240ms;
+  }
+  & > :nth-child(n + 8) {
+    animation-delay: 280ms;
+  }
+}
+
+.dark {
+  --shimmer: rgb(255 255 255 / 0.06);
+}
+
+@keyframes fx-shimmer {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}
+
+/* =============================================================================
+   CompletionFx — "fuel-up"
+
+   The feedback for the one action this app exists for. A fuel drop falls into
+   a tank, the tank fills to the area's new level, the gauge ring around it
+   follows, and a check is stamped on top. On the area's last station the tank
+   fills to the brim and the screen bursts.
+
+   Timings are absolute from mount and live here, not in the component, so
+   the whole choreography reads in one place. Under prefers-reduced-motion the
+   base layer collapses every duration and delay, so each element lands
+   directly on its END state — which is why every rule below is written so
+   that its end state is the meaningful one (tank at the new level, check
+   drawn, decoration hidden).
+   ========================================================================== */
+@layer components {
+  .fx-complete {
+    animation: fx-complete-overlay var(--fx-total, 1800ms) var(--ease-standard) forwards;
+  }
+
+  .fx-complete-tint {
+    background: radial-gradient(circle at 50% 45%, rgb(34 211 238 / 0.22), transparent 60%);
+  }
+
+  .fx-complete-stage {
+    width: 13rem;
+    height: 13rem;
+    overflow: visible;
+  }
+
+  .fx-complete-stage * {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .fx-bloom {
+    opacity: 0;
+    animation: fx-bloom 1200ms var(--ease-standard);
+  }
+
+  .fx-drop {
+    opacity: 0;
+    animation: fx-drop 520ms cubic-bezier(0.55, 0, 1, 0.45);
+  }
+
+  .fx-shock {
+    opacity: 0;
+    animation: fx-shock 700ms var(--ease-emphasized) 440ms;
+  }
+
+  .fx-shock + .fx-shock {
+    animation-delay: 580ms;
+  }
+
+  .fx-arc {
+    stroke-dashoffset: var(--to);
+    animation: fx-arc 800ms var(--ease-emphasized) 420ms both;
+  }
+
+  .fx-liquid {
+    transform: translateY(var(--to));
+    animation: fx-liquid 900ms var(--ease-emphasized) 420ms both;
+  }
+
+  .fx-wave {
+    animation: fx-wave 1100ms linear infinite;
+  }
+
+  .fx-wave-back {
+    animation-duration: 1700ms;
+    animation-direction: reverse;
+  }
+
+  .fx-bubble {
+    opacity: 0;
+    animation: fx-bubble 900ms ease-out 600ms;
+  }
+
+  .fx-bubble:nth-of-type(2) {
+    animation-delay: 760ms;
+  }
+
+  .fx-bubble:nth-of-type(3) {
+    animation-delay: 900ms;
+  }
+
+  .fx-check {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: fx-check 340ms var(--ease-standard) 640ms both;
+  }
+
+  .fx-check-pop {
+    animation: fx-check-pop 480ms var(--ease-spring) 620ms both;
+  }
+
+  .fx-spark {
+    opacity: 0;
+    animation: fx-spark 620ms var(--ease-emphasized) 660ms;
+  }
+
+  .fx-caption {
+    animation: fx-enter 320ms var(--ease-emphasized) 700ms backwards;
+  }
+
+  /* Absolutely positioned inside a centring flex box, so each piece starts
+     at the static (centred) position — no physical left/right offset. */
+  .fx-confetti {
+    position: absolute;
+    opacity: 0;
+    animation: fx-confetti 1500ms cubic-bezier(0.2, 0.6, 0.4, 1) var(--delay, 900ms);
+  }
+
+  .fx-trophy {
+    animation: fx-check-pop 560ms var(--ease-spring) 1000ms both;
+  }
+}
+
+@keyframes fx-complete-overlay {
+  0% {
+    opacity: 0;
+  }
+  8%,
+  86% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fx-bloom {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes fx-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-150px) scale(0.7);
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(var(--land)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(var(--land)) scale(1.5, 0.3);
+  }
+}
+
+@keyframes fx-shock {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+@keyframes fx-arc {
+  from {
+    stroke-dashoffset: var(--from);
+  }
+  to {
+    stroke-dashoffset: var(--to);
+  }
+}
+
+@keyframes fx-liquid {
+  from {
+    transform: translateY(var(--from));
+  }
+  to {
+    transform: translateY(var(--to));
+  }
+}
+
+@keyframes fx-wave {
+  to {
+    transform: translateX(60px);
+  }
+}
+
+@keyframes fx-bubble {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-34px) scale(1);
+  }
+}
+
+@keyframes fx-check {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fx-check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fx-spark {
+  0% {
+    opacity: 0;
+    transform: translateX(-12px) scaleX(0.3);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(0) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(30px) scaleX(0.2);
+  }
+}
+
+@keyframes fx-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(0.4);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 0.7), var(--up)) rotate(calc(var(--rot) * 0.5)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--fall)) rotate(var(--rot)) scale(0.9);
+  }
+}
+
+/* The area-complete tint is fuel, not neon: the tank is full. */
+.fx-complete-tint[data-area] {
+  background: radial-gradient(circle at 50% 45%, rgb(245 158 11 / 0.3), transparent 65%);
+}
+
+/* Gauges charge in when they first appear, then glide (by transition) to each
+   later value. `backwards` only: after the entrance the element's own value
+   rules, so the transition handles every change from then on. */
+.fx-bar-fill {
+  animation: fx-bar-in 900ms var(--ease-emphasized) 100ms backwards;
+}
+
+.fx-arc-fill {
+  animation: fx-arc-in 900ms var(--ease-emphasized) 100ms backwards;
+}
+
+@keyframes fx-bar-in {
+  from {
+    inline-size: 0;
+  }
+}
+
+@keyframes fx-arc-in {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+
+/* The fuel gauge's needle. The transform sits on the element (`--angle`), so
+   the transition carries every later change; the entrance sweeps it up from
+   empty. In SVG a `px` origin is in the drawing's own units: the dial's hub. */
+.fx-needle {
+  transform-origin: 120px 120px;
+  transform: rotate(var(--angle, 0deg));
+  animation: fx-needle-in 900ms var(--ease-emphasized) 100ms backwards;
+}
+
+.fx-gauge-arc {
+  filter: drop-shadow(0 0 6px rgb(34 211 238 / 0.35));
+}
+
+@keyframes fx-needle-in {
+  from {
+    transform: rotate(0deg);
   }
 }

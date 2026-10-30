@@ -21,8 +21,13 @@ interface EmptyStateProps {
 export function EmptyState({ icon: Icon = Inbox, title, description, action }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center gap-4 px-4 py-10 text-center">
-      <span className="bg-surface-alt text-text-muted flex size-12 items-center justify-center rounded-full">
-        <Icon className="size-6" aria-hidden />
+      {/* A beacon: the icon in a lit orb inside two radar rings. */}
+      <span className="relative my-4 flex size-12 items-center justify-center" aria-hidden>
+        <span className="border-neon/30 absolute -inset-3 rounded-full border" />
+        <span className="border-neon/15 absolute -inset-6 rounded-full border" />
+        <span className="bg-neon-bg text-neon-strong shadow-glow relative flex size-12 items-center justify-center rounded-full">
+          <Icon className="size-6" />
+        </span>
       </span>
       <div className="flex flex-col gap-1">
         <p className="text-h3 text-text">{title}</p>

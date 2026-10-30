@@ -19,8 +19,12 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <div role="alert" className="flex flex-col items-center gap-4 px-4 py-10 text-center">
-      <span className="bg-danger-bg text-danger flex size-12 items-center justify-center rounded-full">
-        <AlertTriangle className="size-6" aria-hidden />
+      <span className="relative my-4 flex size-12 items-center justify-center" aria-hidden>
+        <span className="border-danger/30 absolute -inset-3 rounded-full border" />
+        <span className="border-danger/15 absolute -inset-6 rounded-full border" />
+        <span className="bg-danger-bg text-danger relative flex size-12 items-center justify-center rounded-full">
+          <AlertTriangle className="size-6" />
+        </span>
       </span>
       <div className="flex flex-col gap-1">
         <p className="text-h3 text-text">{title}</p>

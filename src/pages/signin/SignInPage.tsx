@@ -46,12 +46,21 @@ export function SignInPage() {
   }
 
   return (
-    <div className="bg-brand-800 flex min-h-dvh items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="fx-auth-backdrop flex min-h-dvh flex-col items-center justify-center gap-4 p-4">
+      {/* The lockup from the app icon and splash, so the hand-over from the
+          launch screen lands on the same artwork. Its wordmark is outlines,
+          so `alt` carries the name. */}
+      <img
+        src="/logo.svg"
+        alt={app.name}
+        width="280"
+        height="280"
+        className="motion-safe:animate-enter aspect-square w-1/2 max-w-3xs"
+      />
+      <Card className="motion-safe:animate-enter dark:bg-glass w-full max-w-md dark:backdrop-blur-xl">
         <CardContent className="flex flex-col gap-6 p-6">
           <div className="flex flex-col gap-1 text-center">
-            <span className="text-display text-primary">{app.name}</span>
-            <h1 className="text-h2 text-text">{nav.signInTitle}</h1>
+            <h1 className="text-h1 text-text">{nav.signInTitle}</h1>
           </div>
 
           <form

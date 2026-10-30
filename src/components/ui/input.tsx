@@ -10,7 +10,10 @@ export function Input({ className, type = 'text', ...props }: ComponentProps<'in
     <input
       type={type}
       className={cn(
-        'border-border bg-surface text-text placeholder:text-text-muted text-body h-12 w-full rounded-md border px-4 transition-colors',
+        'border-border bg-surface text-text placeholder:text-text-muted text-body shadow-card h-12 w-full rounded-md border px-4 transition',
+        // The field lights up while it has the cursor. The neon border alone
+        // holds 3:1 against the surface, so the glow is extra, not the signal.
+        'focus-visible:border-neon focus-visible:shadow-glow focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50',
         'aria-invalid:border-danger',
         className,

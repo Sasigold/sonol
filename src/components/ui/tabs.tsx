@@ -21,7 +21,10 @@ export function Tabs(props: Omit<ComponentProps<typeof TabsPrimitive.Root>, 'dir
 export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
-      className={cn('bg-surface-alt flex w-full gap-1 rounded-md p-1', className)}
+      className={cn(
+        'bg-surface border-border shadow-card flex w-full gap-1 rounded-md border p-1',
+        className,
+      )}
       {...props}
     />
   );
@@ -31,8 +34,10 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsP
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'text-body-strong text-text-muted flex h-12 flex-1 items-center justify-center rounded-sm transition-colors',
-        'data-[state=active]:bg-surface data-[state=active]:text-text data-[state=active]:shadow-card',
+        'text-body-strong text-text-muted hover:text-text flex h-12 flex-1 items-center justify-center rounded-sm transition',
+        // The active tab is lit, not just raised: the same gradient as the
+        // primary action, so "where am I" reads at a glance in sunlight.
+        'data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-raised data-[state=active]:bg-(image:--grad-primary)',
         className,
       )}
       {...props}
@@ -41,5 +46,10 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsP
 }
 
 export function TabsContent({ className, ...props }: ComponentProps<typeof TabsPrimitive.Content>) {
-  return <TabsPrimitive.Content className={cn('mt-4', className)} {...props} />;
+  return (
+    <TabsPrimitive.Content
+      className={cn('motion-safe:animate-enter mt-4 outline-none', className)}
+      {...props}
+    />
+  );
 }

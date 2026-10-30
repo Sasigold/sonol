@@ -25,7 +25,8 @@ export function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'border-border bg-surface text-text text-body flex h-12 w-full items-center justify-between gap-2 rounded-md border px-4',
+        'border-border bg-surface text-text text-body shadow-card flex h-12 w-full items-center justify-between gap-2 rounded-md border px-4 transition',
+        'focus-visible:border-neon focus-visible:shadow-glow data-[state=open]:border-neon focus-visible:outline-none',
         'aria-invalid:border-danger disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
@@ -53,6 +54,7 @@ export function SelectContent({
           // Radix measures the space available; a fixed step would either
           // overflow small screens or waste large ones.
           'bg-surface border-border shadow-overlay z-50 max-h-[--radix-select-content-available-height] min-w-max overflow-hidden rounded-md border',
+          'data-[state=open]:animate-dialog-in origin-(--radix-select-content-transform-origin)',
           className,
         )}
         {...props}

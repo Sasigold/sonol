@@ -65,8 +65,13 @@ export function AppShell() {
   }
 
   return (
-    <div className="bg-bg flex h-dvh flex-col overflow-hidden">
-      <header className="bg-surface border-border shrink-0 border-b">
+    <div className="fx-backdrop flex h-dvh flex-col overflow-hidden">
+      {/*
+        Frosted, over the backdrop's aurora. `relative` + `z-10` keep it (and
+        its glow line) above the scroller's first row; it is still a plain
+        shrink-0 row of the frame, never sticky.
+      */}
+      <header className="fx-glass border-border relative z-10 shrink-0 border-b">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 p-4">
           {/*
             The header identity is the entry point to /profile — the bottom nav
@@ -78,8 +83,17 @@ export function AppShell() {
               <img
                 src={profile.photo_url}
                 alt=""
-                className="size-12 shrink-0 rounded-full object-cover"
+                className="ring-neon/50 ring-offset-bg size-12 shrink-0 rounded-full object-cover ring-2 ring-offset-2"
               />
+            ) : profile ? (
+              // No photo: the initial in a lit orb, so the header always has an
+              // anchor at its start edge rather than a bare line of text.
+              <span
+                aria-hidden
+                className="bg-primary text-primary-foreground text-h3 shadow-glow flex size-12 shrink-0 items-center justify-center rounded-full bg-(image:--grad-primary)"
+              >
+                {profile.display_name.trim().charAt(0) || '?'}
+              </span>
             ) : null}
             <span className="flex min-w-0 flex-col gap-1">
               <span className="text-h3 text-text truncate">
@@ -117,6 +131,8 @@ export function AppShell() {
             </Button>
           </div>
         </div>
+        {/* The lit seam between the chrome and the content. */}
+        <span aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-(image:--grad-edge)" />
       </header>
 
       <OfflineBanner />
@@ -131,7 +147,13 @@ export function AppShell() {
         a desktop browser.
       */}
       <main ref={scrollRef} className="grow overflow-y-auto overscroll-contain">
-        <div className="mx-auto w-full max-w-3xl p-4">
+        {/*
+          Keyed on the path so every screen arrives with the same short
+          entrance. The animation fills BACKWARDS only: once it ends no
+          transform is left on this wrapper, because a transformed ancestor
+          would become the containing block of any `position: fixed` child.
+        */}
+        <div key={pathname} className="motion-safe:animate-enter mx-auto w-full max-w-3xl p-4">
           <Outlet />
         </div>
       </main>
